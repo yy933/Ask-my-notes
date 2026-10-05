@@ -13,10 +13,10 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ## Development Roadmap (Completed Checklist)
 
 ### Step 1: Environment Setup & Database Schema
-- [] Initialize a new Next.js (App Router) + TypeScript + Tailwind CSS project
-- [] Install and configure `shadcn/ui` (Button, Input, Card, Dialog, Toast, etc.)
-- [] Set up a Supabase project and enable the `pgvector` extension
-- [] Design and execute Supabase SQL Schema:
+- [x] Initialize a new Next.js (App Router) + TypeScript + Tailwind CSS project
+- [x] Install and configure `shadcn/ui` (Button, Input, Card, Dialog, Toast, etc.)
+- [x] Set up a Supabase project and enable the `pgvector` extension (not enable RLS at this phase for faster development)
+- [x] Design and execute Supabase SQL Schema:
   - `documents` table (`id`, `user_id`, `title`, `file_path`, `created_at`)
   - `document_chunks` table (`id`, `document_id`, `content`, `embedding vector(768)`, `metadata`)
 - [x] Configure Supabase Client and environment variables (`.env.local`)
@@ -46,10 +46,13 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [] Implement Toast notifications (upload success, error handling) and global loading states
 - [] Build Document List view: display uploaded files with sync-deletion support (removes vector records simultaneously)
 
-### Step 6: Deployment, Testing & Guardrails
-- [] Deploy project to Vercel and configure production environment variables
-- [] End-to-end integration testing: Upload multiple PDF/TXT files, query chatbot, and verify response accuracy and stream latency
-- [] Implement basic guardrails (e.g., file size limits, API rate limiting)
+### Step 6: Deployment, Testing & Security Guardrails
+- [ ] Enable Row Level Security (RLS) for multi-tenant data isolation
+- [ ] Implement basic guardrails (e.g., file size/type validation, API rate limiting)
+- [ ] Deploy production build to Vercel with environment variables
+- [ ] Perform End-to-End (E2E) integration testing:
+  - Validate file upload & embedding pipeline latency
+  - Verify semantic search accuracy and response streaming smoothness
 
 ### Step 7: Portfolio Packaging & Documentation
 - [x] Draw a concise **System Architecture Diagram** (Mermaid.js / Excalidraw)
@@ -57,3 +60,28 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [] Write a comprehensive, production-grade GitHub `README.md`
 
 ## Getting Started / Local Installation
+
+### 🗄️️ Database Setup & Type Generation (Supabase)
+
+This project utilizes **Supabase** integrated with the `pgvector` extension for vector similarity searches and automatic TypeScript type generation.
+
+#### 1. Database Migrations via Supabase CLI
+
+All database schemas, `pgvector` extensions, HNSW indexes, and RPC search functions are version-controlled using Supabase migrations under [`/supabase/migrations`](./supabase/migrations).
+
+To apply these migrations to your Supabase project:
+
+```bash
+# 1. Link your local project to your Supabase project
+npx supabase link --project-ref <your-project-ref-id>
+
+# 2. Push database migrations to remote
+npx supabase db push
+```
+
+#### 2. Generate TypeScript Definitions
+To ensure full type safety with Supabase Client queries, generate TypeScript types directly from your database schema:
+
+```bash
+npx supabase gen types typescript --project-id <your-project-ref-id> > types/database.ts
+```
