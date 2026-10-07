@@ -95,3 +95,34 @@ To ensure full type safety with Supabase Client queries, generate TypeScript typ
 ```bash
 npx supabase gen types typescript --project-id <your-project-ref-id> > types/database.ts
 ```
+
+## Testing
+
+This project employs **End-to-End (E2E) Testing** using [Playwright](https://playwright.dev/) to guarantee reliability across the document ingestion and vector processing pipelines.
+
+### E2E Integration Suite (Playwright)
+
+The E2E suite verifies the critical "Happy Path" of the application, simulating real user interactions with the Next.js frontend, Server Action processing, Gemini Embedding generation, and Supabase Database persistence.
+
+#### Verified Scenarios
+
+- **File Upload & Validation:** Ensures `.pdf` and `.txt` files pass validation constraints (e.g., file size limits, MIME types).
+- **Ingestion Pipeline:** Verifies full Server Action execution including text extraction, 500-character chunking (50-char overlap), and Gemini `text-embedding-004` vector generation.
+- **Async Feedback & UI State:** Ensures proper loading indicators (`isPending`) and success/error notifications using React 19 `useActionState`.
+
+### 🚀 Running Tests Locally
+
+Before running E2E tests, ensure your local development server is running and your `.env.local` contains valid Supabase and Gemini credentials.
+
+```bash
+# Option 1: Run tests with Playwright Interactive UI Mode (Recommended for debugging)
+npx playwright test --ui
+
+# Option 2: Run tests in headless mode (Command line)
+npx playwright test
+
+# Option 3: View HTML execution and trace reports
+npx playwright show-report
+```
+
+> Note: _Playwright is pre-configured with auto-waiting mechanism to seamlessly accommodate non-blocking Gemini API embedding latencies (up to 15s timeout tolerance per transaction)._
