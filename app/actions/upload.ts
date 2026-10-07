@@ -7,13 +7,18 @@ import { supabase } from '@/lib/supabase';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-export async function processAndStoreDocument(formData: FormData) {
+export async function processAndStoreDocument(
+  prevState: { success: boolean; message: string } | null,
+  formData: FormData
+) {
   try {
     const file = formData.get('file') as File;
-    if (!file) throw new Error('No file provided.');
+    if (!file || file.size === 0) {
+      return { success: false, message: 'No file provided.' };
+    }
     if (file.size > MAX_FILE_SIZE) throw new Error('File size exceeds the 10MB limit.');
 
-    // 1. Read file content based on its type (PDF or TXT)
+    // 1. Read file content based on its type (PDF or TXT) and extract raw text with parser
     let rawText = '';
     const arrayBuffer = await file.arrayBuffer();
 
@@ -52,7 +57,6 @@ export async function processAndStoreDocument(formData: FormData) {
       if (chunks.length === 0) throw new Error('No chunks were created from the document content.');
 
       // 4. Generate all embeddings first (to avoid partial inserts in case of an error)
-      // const rows = [];
       const rows = await Promise.all(
         chunks.map(async (chunk) => {
           // call Gemini embedding model to get embedding vector
@@ -61,7 +65,7 @@ export async function processAndStoreDocument(formData: FormData) {
             contents: chunk.content,
             config: {
               outputDimensionality: 768, // must match the vector dimension (vector(768))
-              taskType: 'RETRIEVAL_DOCUMENT',
+              taskType: 'RETRIEVAL_DOCUMENT', // specify the task type for document retrieval
             },
           });
 
@@ -81,9 +85,14 @@ export async function processAndStoreDocument(formData: FormData) {
       // 5. Insert all chunks into `document_chunks` table
       const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
       if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
-      return { success: true, documentId: docData.id, chunkCount: chunks.length };
+      return {
+        success: true,
+        documentId: docData.id,
+        chunkCount: chunks.length,
+        message: `Successfully processed and stored document with ${chunks.length} chunks.`,
+      };
     } catch (error) {
-      // rollback: remove the orphan document (chuncks cascade-delete)
+      // rollback: remove the orphan document (chunks cascade-delete)
       await supabase.from('documents').delete().eq('id', docData.id);
       throw error;
     }
@@ -91,7 +100,7 @@ export async function processAndStoreDocument(formData: FormData) {
     console.error('File Processing Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'File processing failed',
+      message: error instanceof Error ? error.message : 'File processing failed',
     };
   }
 }
