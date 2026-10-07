@@ -27,10 +27,10 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ### Step 2: File Upload & Chunking Pipeline (Ingestion Engine)
 
 - [] Build the front-end file upload interface (supporting `.txt` and `.pdf`)
-- [] Implement Server Actions / API Routes to handle file ingestion
-- [] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
+- [x] Implement Server Actions / API Routes to handle file ingestion
+- [x] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
 - [x] Implement text chunking logic (e.g., 500 characters / chunk with 50-character overlap)
-- [] Connect Google Gemini Embedding API (`text-embedding-004`) to generate embeddings for each chunk
+- [x] Connect Google Gemini Embedding API (`text-embedding-004`) to generate embeddings for each chunk
 
 ### Step 3: Vector Storage & Hybrid Retrieval
 

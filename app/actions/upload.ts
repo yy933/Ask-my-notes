@@ -67,17 +67,28 @@ export async function processAndStoreDocument(formData: FormData) {
         const embeddingVector = embeddingResponse.embeddings?.[0]?.values;
         if (!embeddingVector) throw new Error(`Embedding failed for chunk ${chunk.chunkIndex}`);
 
-        // insert into `document_chunks` table
+        // Prepare the row for insertion
         rows.push({
           document_id: docData.id,
           content: chunk.content,
           embedding: JSON.stringify(embeddingVector),
           metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
         });
+        // 5. Insert all chunks into `document_chunks` table
+        const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
+        if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
+        return { success: true, documentId: docData.id, chunkCount: chunks.length };
       }
-    } catch {}
+    } catch (error) {
+      // rollback: remove the orphan document (chuncks cascade-delete)
+      await supabase.from('documents').delete().eq('id', docData.id);
+      throw error;
+    }
   } catch (error: unknown) {
     console.error('File Processing Error:', error);
-    return { success: false, error: (error as Error).message || 'File processing failed' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'File processing failed',
+    };
   }
 }
