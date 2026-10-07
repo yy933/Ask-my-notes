@@ -52,33 +52,36 @@ export async function processAndStoreDocument(formData: FormData) {
       if (chunks.length === 0) throw new Error('No chunks were created from the document content.');
 
       // 4. Generate all embeddings first (to avoid partial inserts in case of an error)
-      const rows = [];
-      for (const chunk of chunks) {
-        // call Gemini embedding model to get embedding vector
-        const embeddingResponse = await ai.models.embedContent({
-          model: 'gemini-embedding-001',
-          contents: chunk.content,
-          config: {
-            outputDimensionality: 768, // must match the vector dimension (vector(768))
-            taskType: 'RETRIEVAL_DOCUMENT',
-          },
-        });
+      // const rows = [];
+      const rows = await Promise.all(
+        chunks.map(async (chunk) => {
+          // call Gemini embedding model to get embedding vector
+          const embeddingResponse = await ai.models.embedContent({
+            model: 'gemini-embedding-001',
+            contents: chunk.content,
+            config: {
+              outputDimensionality: 768, // must match the vector dimension (vector(768))
+              taskType: 'RETRIEVAL_DOCUMENT',
+            },
+          });
 
-        const embeddingVector = embeddingResponse.embeddings?.[0]?.values;
-        if (!embeddingVector) throw new Error(`Embedding failed for chunk ${chunk.chunkIndex}`);
+          const embeddingVector = embeddingResponse.embeddings?.[0]?.values;
+          if (!embeddingVector) throw new Error(`Embedding failed for chunk ${chunk.chunkIndex}`);
 
-        // Prepare the row for insertion
-        rows.push({
-          document_id: docData.id,
-          content: chunk.content,
-          embedding: JSON.stringify(embeddingVector),
-          metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
-        });
-        // 5. Insert all chunks into `document_chunks` table
-        const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
-        if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
-        return { success: true, documentId: docData.id, chunkCount: chunks.length };
-      }
+          // Prepare the row for insertion
+          return {
+            document_id: docData.id,
+            content: chunk.content,
+            embedding: embeddingVector as unknown as string, // Supabase expects a string for the embedding column
+            metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
+          };
+        })
+      );
+
+      // 5. Insert all chunks into `document_chunks` table
+      const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
+      if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
+      return { success: true, documentId: docData.id, chunkCount: chunks.length };
     } catch (error) {
       // rollback: remove the orphan document (chuncks cascade-delete)
       await supabase.from('documents').delete().eq('id', docData.id);
