@@ -1,4 +1,5 @@
-# Ask My Notes - Personal RAG Knowledge Assistant 
+# Ask My Notes - Personal RAG Knowledge Assistant
+
 An AI-powered search & chat engine for your private docs, built with Next.js, Supabase (pgvector), and Gemini API.
 
 ## Live Demo
@@ -6,6 +7,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ## Key Feature
 
 ## System Architecture Diagram
+
 ![System architecture diagram](/public/System%20architecture%20diagram.svg)
 
 ## Tech Stack & Architectural Decisions
@@ -13,6 +15,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ## Development Roadmap (Completed Checklist)
 
 ### Step 1: Environment Setup & Database Schema
+
 - [x] Initialize a new Next.js (App Router) + TypeScript + Tailwind CSS project
 - [x] Install and configure `shadcn/ui` (Button, Input, Card, Dialog, Toast, etc.)
 - [x] Set up a Supabase project and enable the `pgvector` extension (not enable RLS at this phase for faster development)
@@ -22,6 +25,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Configure Supabase Client and environment variables (`.env.local`)
 
 ### Step 2: File Upload & Chunking Pipeline (Ingestion Engine)
+
 - [] Build the front-end file upload interface (supporting `.txt` and `.pdf`)
 - [] Implement Server Actions / API Routes to handle file ingestion
 - [] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
@@ -29,11 +33,13 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [] Connect Google Gemini Embedding API (`text-embedding-004`) to generate embeddings for each chunk
 
 ### Step 3: Vector Storage & Hybrid Retrieval
+
 - [] Store generated text chunks and vector embeddings into Supabase `document_chunks`
 - [] Write Supabase RPC SQL Function (Cosine Similarity Vector Search: `match_documents`)
 - [] Test vector search API to ensure accurate retrieval of top 3–5 relevant chunks for a given query
 
 ### Step 4: RAG Chat Interface & Streaming Response
+
 - [] Build Chatbot UI (Message list, user input box, loading skeleton/animations)
 - [] Develop Chat API Route:
   - Convert user query into embeddings -> Query Supabase for top matching chunks
@@ -41,12 +47,14 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
 
 ### Step 5: Citations & UI Polish
+
 - [] Add **"Source Citations"** beneath Chatbot responses (referencing document title and chunk/page index)
 - [] Allow users to click citations to open a Modal/Drawer and view the original chunk text
 - [] Implement Toast notifications (upload success, error handling) and global loading states
 - [] Build Document List view: display uploaded files with sync-deletion support (removes vector records simultaneously)
 
 ### Step 6: Deployment, Testing & Security Guardrails
+
 - [ ] Enable Row Level Security (RLS) for multi-tenant data isolation
 - [ ] Implement basic guardrails (e.g., file size/type validation, API rate limiting)
 - [ ] Deploy production build to Vercel with environment variables
@@ -55,6 +63,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
   - Verify semantic search accuracy and response streaming smoothness
 
 ### Step 7: Portfolio Packaging & Documentation
+
 - [x] Draw a concise **System Architecture Diagram** (Mermaid.js / Excalidraw)
 - [] Record a 30–45s product demo GIF / video walkthrough
 - [] Write a comprehensive, production-grade GitHub `README.md`
@@ -80,6 +89,7 @@ npx supabase db push
 ```
 
 #### 2. Generate TypeScript Definitions
+
 To ensure full type safety with Supabase Client queries, generate TypeScript types directly from your database schema:
 
 ```bash

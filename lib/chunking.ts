@@ -2,8 +2,11 @@ import type { Chunk } from '@/types';
 
 export function chunkText(text: string, chunkSize = 500, overlap = 50): Chunk[] {
   // remove extra newlines and trim the text
-  const cleanedText = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  
+  const cleanedText = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
   if (!cleanedText) return [];
 
   const chunks: Chunk[] = [];
