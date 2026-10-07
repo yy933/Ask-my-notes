@@ -11,7 +11,7 @@ export default function FileUpload() {
   return (
     <Card className="mx-auto mt-8 w-full max-w-md">
       <CardHeader>
-        <CardTitle>Upload File</CardTitle>
+        <CardTitle>Upload File (Only allow .txt or .pdf files)</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
@@ -23,7 +23,7 @@ export default function FileUpload() {
             className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-100"
           />
           <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? 'Processing...' : 'Start Parsing and Storing in Vector Database'}
+            {isPending ? 'Processing...' : 'Upload your file'}
           </Button>
         </form>
         {state?.message && <p className="mt-4 text-center text-sm font-medium">{state.message}</p>}
