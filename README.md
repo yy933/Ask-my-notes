@@ -35,7 +35,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ### Step 3: Vector Storage & Hybrid Retrieval
 
 - [] Store generated text chunks and vector embeddings into Supabase `document_chunks`
-- [] Write Supabase RPC SQL Function (Cosine Similarity Vector Search: `match_documents`)
+- [x] Write Supabase RPC SQL Function (Cosine Similarity Vector Search: `match_documents`)
 - [] Test vector search API to ensure accurate retrieval of top 3–5 relevant chunks for a given query
 
 ### Step 4: RAG Chat Interface & Streaming Response
