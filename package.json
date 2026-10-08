@@ -20,7 +20,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write \"./**/*.{js,jsx,ts,tsx,json,md,css}\""
+    "format": "prettier --write \"./**/*.{js,jsx,ts,tsx,json,md,css}\"",
+    "test": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -42,6 +44,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.2",
+    "dotenv": "^18.0.6",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "eslint-config-prettier": "^10.1.8",
@@ -49,6 +53,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.119.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   }
 }
