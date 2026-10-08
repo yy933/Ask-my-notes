@@ -9,10 +9,14 @@ export async function searchSimilarChunks(
   matchCount: number = 5,
   threshold: number = 0.3
 ): Promise<ChunkSearchResult[]> {
+  // Edge case 1: Handle empty query
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return [];
+
   // 1. Generate embedding for the query using Gemini API
   const embeddingResponse = await ai.models.embedContent({
     model: EMBEDDING_MODEL,
-    contents: query,
+    contents: trimmedQuery,
     config: {
       outputDimensionality: 768, // must match the vector dimension (vector(768))
       taskType: 'RETRIEVAL_QUERY', // specify the task type for query retrieval(search)
@@ -35,5 +39,6 @@ export async function searchSimilarChunks(
     console.error('Vector Search Error:', error);
     throw new Error(`Vector search failed: ${error.message}`);
   }
-  return data as ChunkSearchResult[];
+  // Edge case 2: When Supabase returns null or undefined data, return an empty array
+  return (data as ChunkSearchResult[]) ?? [];
 }
