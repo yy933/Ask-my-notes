@@ -6,6 +6,7 @@ import { chunkText } from '@/lib/chunking';
 import { supabase } from '@/lib/supabase';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 
 export async function processAndStoreDocument(
   prevState: { success: boolean; message: string } | null,
@@ -61,7 +62,7 @@ export async function processAndStoreDocument(
         chunks.map(async (chunk) => {
           // call Gemini embedding model to get embedding vector
           const embeddingResponse = await ai.models.embedContent({
-            model: 'gemini-embedding-001',
+            model: EMBEDDING_MODEL,
             contents: chunk.content,
             config: {
               outputDimensionality: 768, // must match the vector dimension (vector(768))
