@@ -26,7 +26,7 @@ export async function searchSimilarChunks(
 
   // 2. Call the Supabase RPC function to search for similar chunks
   const { data, error } = await supabase.rpc('match_documents', {
-    query_embedding: queryEmbedding as unknown as string, // Supabase expects a string for the embedding column
+    query_embedding: JSON.stringify(queryEmbedding), // Supabase expects a string for the embedding column
     match_count: matchCount,
     match_threshold: threshold,
   });

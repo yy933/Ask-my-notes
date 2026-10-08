@@ -77,7 +77,7 @@ export async function processAndStoreDocument(
           return {
             document_id: docData.id,
             content: chunk.content,
-            embedding: embeddingVector as unknown as string, // Supabase expects a string for the embedding column
+            embedding: JSON.stringify(embeddingVector), // Supabase expects a string for the embedding column
             metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
           };
         })
