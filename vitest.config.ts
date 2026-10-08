@@ -17,7 +17,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Support Next.js `@/` alias for imports
-      '@': path.resolve(__dirname, './'),
+      '@': path.resolve(import.meta.dirname, './'),
     },
   },
 });
