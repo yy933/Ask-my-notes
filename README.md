@@ -41,7 +41,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ### Step 4: RAG Chat Interface & Streaming Response
 
 - [] Build Chatbot UI (Message list, user input box, loading skeleton/animations)
-- [] Develop Chat API Route:
+- [x] Develop Chat API Route:
   - Convert user query into embeddings -> Query Supabase for top matching chunks
   - Assemble RAG System Prompt (inject relevant chunks into context for Gemini LLM)
 - [] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
