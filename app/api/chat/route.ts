@@ -5,12 +5,14 @@ import { searchSimilarChunks } from '@/lib/retrieval';
 export async function POST(req: Request) {
   try {
     // Get the latest message from the request body
+
     const { messages } = await req.json();
     const latestMessage = messages[messages.length - 1]?.content;
     if (!latestMessage) {
       return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
     }
     // 1. Search for relevant chunks based on the latest message and get Top 3-5 results
+
     const relevantChunks = await searchSimilarChunks(latestMessage, 4, 0.4);
 
     // 2. Merge the relevant chunks into a single string to provide context for the AI model
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
 
     // 4. Generate a streaming response using the Gemini API
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: messages.map((m: { role: string; content: string }) => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }],
@@ -57,6 +59,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error('Error in chat API:', error);
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }

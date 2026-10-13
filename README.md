@@ -44,7 +44,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Develop Chat API Route:
   - Convert user query into embeddings -> Query Supabase for top matching chunks
   - Assemble RAG System Prompt (inject relevant chunks into context for Gemini LLM)
-- [] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
+- [x] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
 
 ### Step 5: Citations & UI Polish
 
