@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ai } from '@/lib/gemini';
 import { searchSimilarChunks } from '@/lib/retrieval';
+import { retryWithBackoff } from '@/lib/utils';
 
 export async function POST(req: Request) {
   try {
@@ -28,19 +29,20 @@ export async function POST(req: Request) {
     Provided context: ${contextText || 'No relevant context found.'}
     `.trim();
 
-    // 4. Generate a streaming response using the Gemini API
-    const response = await ai.models.generateContentStream({
-      model: 'gemini-3.1-flash-lite',
-      contents: messages.map((m: { role: string; content: string }) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
-      })),
-      config: {
-        systemInstruction,
-        temperature: 0.3,
-      },
+    // 4. Generate a streaming response using the Gemini API (Retry with backoff in case of 503 errors)
+    const response = await retryWithBackoff(async () => {
+      return await ai.models.generateContentStream({
+        model: 'gemini-3.1-flash-lite',
+        contents: messages.map((m: { role: string; content: string }) => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.content }],
+        })),
+        config: {
+          systemInstruction,
+          temperature: 0.3,
+        },
+      });
     });
-
     // 5. Stream the response back to the client
     const encoder = new TextEncoder();
     const readable = new ReadableStream({

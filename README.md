@@ -36,15 +36,18 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 - [x] Store generated text chunks and vector embeddings into Supabase `document_chunks`
 - [x] Write Supabase RPC SQL Function (Cosine Similarity Vector Search: `match_documents`)
-- [] Test vector search API to ensure accurate retrieval of top 3–5 relevant chunks for a given query
+- [x] Test vector search API to ensure accurate retrieval of top 3–5 relevant chunks for a given query
 
 ### Step 4: RAG Chat Interface & Streaming Response
 
-- [] Build Chatbot UI (Message list, user input box, loading skeleton/animations)
 - [x] Develop Chat API Route:
   - Convert user query into embeddings -> Query Supabase for top matching chunks
   - Assemble RAG System Prompt (inject relevant chunks into context for Gemini LLM)
 - [x] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
+- [] Build Chatbot UI (Message list, user input box, loading skeleton/animations)
+  - [] _Subtask 1: State management & layout setup (Message history, input state, shadcn components integration)_
+  - [] _Subtask 2: Frontend streaming receiver (Handle `ReadableStream` and decode typewriter response)_
+  - [] _Subtask 3: UI polish & UX interactions (Auto-scroll to bottom, source citations rendering, loading states)_
 
 ### Step 5: Citations & UI Polish
 
