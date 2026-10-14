@@ -10,3 +10,8 @@ export type ChunkSearchResult = {
   metadata: { chunkIndex: number; fileName: string };
   similarity: number;
 };
+
+export type Message = {
+  role: 'user' | 'model';
+  content: string;
+};
