@@ -1,18 +1,40 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, ArrowDown } from 'lucide-react';
 import { FormattedMessage } from '@/components/FormattedMessage';
 
 export default function ChatPage() {
   const { messages, input, setInput, formAction, isPending } = useChat();
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const bottomThreshold = 100;
+    const atBottom = scrollHeight - scrollTop - clientHeight <= bottomThreshold;
+
+    setIsAtBottom(atBottom);
+  };
+
+  useEffect(() => {
+    if (isAtBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isPending, isAtBottom]);
+
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setIsAtBottom(true);
+  };
 
   // Automatically scroll to the bottom of the chat when new messages are added or when loading state changes
   useEffect(() => {
@@ -33,56 +55,70 @@ export default function ChatPage() {
         </header>
 
         {/* Message List Area */}
-        <ScrollArea className="mb-4 flex-1 pr-4">
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-muted-foreground py-20 text-center">
-                <p>Hi there! How can I help you today?</p>
-              </div>
-            )}
+        <div className="relative flex-1">
+          <ScrollArea className="mb-4 flex-1 pr-4" onScroll={handleScroll}>
+            <div className="space-y-4" pb-4>
+              {messages.length === 0 && (
+                <div className="text-muted-foreground py-20 text-center">
+                  <p>Hi there! How can I help you today?</p>
+                </div>
+              )}
 
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex items-start gap-3 ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {msg.role === 'model' && (
-                  <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                    <Bot className="text-primary h-4 w-4" />
-                  </div>
-                )}
-
-                <Card
-                  className={`max-w-[80%] p-4 leading-relaxed ${
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start gap-3 ${
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  {msg.content ? (
-                    msg.role === 'model' ? (
-                      <FormattedMessage content={msg.content} />
-                    ) : (
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching notes & thinking...
-                    </span>
+                  {msg.role === 'model' && (
+                    <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                      <Bot className="text-primary h-4 w-4" />
+                    </div>
                   )}
-                </Card>
 
-                {msg.role === 'user' && (
-                  <div className="bg-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={scrollRef} />
-          </div>
-        </ScrollArea>
+                  <Card
+                    className={`max-w-[80%] p-4 leading-relaxed ${
+                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    }`}
+                  >
+                    {msg.content ? (
+                      msg.role === 'model' ? (
+                        <FormattedMessage content={msg.content} />
+                      ) : (
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                      )
+                    ) : (
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Searching notes & thinking...
+                      </span>
+                    )}
+                  </Card>
+
+                  {msg.role === 'user' && (
+                    <div className="bg-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                      <User className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={scrollRef} />
+              <div ref={bottomRef} />
+            </div>
+          </ScrollArea>
+          {!isAtBottom && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="animate-in fade-in absolute right-6 bottom-4 rounded-full shadow-md transition-opacity"
+              onClick={scrollToBottom}
+              title="Back to bottom"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
 
         {/* Input Area */}
         <form ref={formRef} action={formAction} className="flex gap-2 border-t pt-2">

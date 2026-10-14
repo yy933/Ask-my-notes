@@ -18,7 +18,7 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
               key={index}
               variant="outline"
               className="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 mx-1 inline-flex cursor-pointer items-center gap-1 text-xs font-normal transition-colors"
-              title={`Reference ${sourceNum}`}
+              title={`Source ${sourceNum}`}
             >
               <FileText className="h-3 w-3" />
               Source {sourceNum}
