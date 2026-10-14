@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { FormattedMessage } from '@/components/FormattedMessage';
 
 export default function ChatPage() {
   const { messages, input, setInput, formAction, isPending } = useChat();
@@ -54,14 +55,20 @@ export default function ChatPage() {
                 )}
 
                 <Card
-                  className={`max-w-[80%] p-4 leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[80%] p-4 leading-relaxed ${
                     msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                   }`}
                 >
-                  {msg.content || (
+                  {msg.content ? (
+                    msg.role === 'model' ? (
+                      <FormattedMessage content={msg.content} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    )
+                  ) : (
                     <span className="text-muted-foreground flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Thinking...
+                      Searching notes & thinking...
                     </span>
                   )}
                 </Card>
