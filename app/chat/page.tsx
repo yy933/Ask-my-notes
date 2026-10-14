@@ -1,76 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect, useActionState } from 'react';
+import { useRef, useEffect } from 'react';
+import { useChat } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
-import type { Message } from '@/types';
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const { messages, input, setInput, formAction, isPending } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // 1. Define Server/Client Action for handling chat messages
-  const handleChatAction = async (prevState: null | string, formData: FormData) => {
-    const userMessageContent = (formData.get('userMessage') as string)?.trim();
-    if (!userMessageContent) return null;
-
-    // Clear input field
-    setInput('');
-
-    // A. Creat chat history with latest user message
-    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessageContent }];
-    // B. Update frontend conversation history (add user's question and an empty AI response bubble)
-    setMessages([...updatedMessages, { role: 'model', content: '' }]);
-
-    try {
-      // C. Call the chat API endpoint to get the AI response
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages }),
-      });
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) throw new Error('Could not get reader from response body');
-
-      let accumulatedText = '';
-
-      // D. Read the ReadableStream character by character and update the last AI bubble's content (typewriter effect)
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunkText = decoder.decode(value, { stream: true });
-        accumulatedText += chunkText;
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'model', content: accumulatedText };
-          return updated;
-        });
-      }
-    } catch (error) {
-      console.error('Error in chat:', error);
-      setMessages((prev) => {
-        return [
-          ...prev,
-          { role: 'model', content: '⚠️ An error occurred, please try again later.' },
-        ];
-      });
-    }
-    return null; // Return null to indicate no specific state update is needed
-  };
-  // 2. Use the useActionState hook to manage the state of the chat action
-  const [state, formAction, isPending] = useActionState(handleChatAction, null);
   // Automatically scroll to the bottom of the chat when new messages are added or when loading state changes
   useEffect(() => {
     if (scrollRef.current) {
@@ -149,6 +91,7 @@ export default function ChatPage() {
                 formRef.current?.requestSubmit();
               }
             }}
+            disabled={isPending}
           />
           <Button type="submit" disabled={isPending || !input.trim()} className="h-auto px-5">
             {isPending ? (
