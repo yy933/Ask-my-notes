@@ -45,7 +45,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
   - Assemble RAG System Prompt (inject relevant chunks into context for Gemini LLM)
 - [x] Implement response streaming (typewriter effect) using `ai` SDK or Gemini API
 - [] Build Chatbot UI (Message list, user input box, loading skeleton/animations)
-  - [] _Subtask 1: State management & layout setup (Message history, input state, shadcn components integration)_
+  - [x] _Subtask 1: State management & layout setup (Message history, input state, shadcn components integration)_
   - [] _Subtask 2: Frontend streaming receiver (Handle `ReadableStream` and decode typewriter response)_
   - [] _Subtask 3: UI polish & UX interactions (Auto-scroll to bottom, source citations rendering, loading states)_
 

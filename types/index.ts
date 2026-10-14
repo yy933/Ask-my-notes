@@ -15,3 +15,7 @@ export type Message = {
   role: 'user' | 'model';
   content: string;
 };
+
+export type FormattedMessageProps = {
+  content: string;
+};
