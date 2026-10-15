@@ -44,7 +44,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
 
     // 3. Add queries in Textarea
     const inputArea = page.locator('textarea[name="userMessage"]');
-    await inputArea.fill('請問我上傳了什麼檔案？');
+    await inputArea.fill('Which file did I upload?');
 
     // 4. Click submit btn
     const submitButton = page.locator('button[type="submit"]');
@@ -52,7 +52,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
 
     // 5. Verify if the queries are displaying in the message container
     const userMessageBubble = page.locator('[data-testid="user-message"]').last();
-    await expect(userMessageBubble).toContainText('請問我上傳了什麼檔案？');
+    await expect(userMessageBubble).toContainText('Which file did I upload?');
 
     // 6. Wait for streaming response
     // Check if AI response appears
