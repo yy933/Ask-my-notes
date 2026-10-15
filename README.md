@@ -62,7 +62,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [ ] Implement basic guardrails (e.g., file size/type validation, API rate limiting)
 - [ ] Deploy production build to Vercel with environment variables
 - [ ] Perform End-to-End (E2E) integration testing:
-  - Validate file upload & embedding pipeline latency
+  - [x] Validate file upload & embedding pipeline latency
   - Verify semantic search accuracy and response streaming smoothness
 
 ### Step 7: Portfolio Packaging & Documentation
@@ -101,17 +101,21 @@ npx supabase gen types typescript --project-id <your-project-ref-id> > types/dat
 
 ## Testing
 
-This project employs **End-to-End (E2E) Testing** using [Playwright](https://playwright.dev/) to guarantee reliability across the document ingestion and vector processing pipelines.
+This project employs **End-to-End (E2E) Testing** using [Playwright](https://playwright.dev/) to guarantee reliability across document ingestion, vector retrieval, and the conversational RAG pipeline.
 
 ### E2E Integration Suite (Playwright)
 
-The E2E suite verifies the critical "Happy Path" of the application, simulating real user interactions with the Next.js frontend, Server Action processing, Gemini Embedding generation, and Supabase Database persistence.
+The E2E suite verifies the critical "Happy Path" of the application, simulating real user interactions with the Next.js frontend, Server/Client Action state processing, Gemini Embedding & LLM generation, and Supabase Vector Database persistence.
 
 #### Verified Scenarios
 
 - **File Upload & Validation:** Ensures `.pdf` and `.txt` files pass validation constraints (e.g., file size limits, MIME types).
-- **Ingestion Pipeline:** Verifies full Server Action execution including text extraction, 500-character chunking (50-char overlap), and Gemini `text-embedding-004` vector generation.
-- **Async Feedback & UI State:** Ensures proper loading indicators (`isPending`) and success/error notifications using React 19 `useActionState`.
+- **Ingestion Pipeline:** Verifies full action execution including text extraction, chunking, and vector generation.
+- **RAG Chatbot & Streaming Response:**
+  - Simulates user queries in the Chat UI (built with React 19 `useActionState` and custom hooks).
+  - Verifies real-time `ReadableStream` response streaming (typewriter effect).
+  - Validates that Supabase vector retrieval correctly supplies context and dynamically renders interactive **Source Badges** (`[Source X]`) in the UI.
+- **Async Feedback & UI State:** Ensures proper loading indicators (`isPending`) and dynamic button/textarea disabling states.
 
 ### 🚀 Running Tests Locally
 
