@@ -11,7 +11,7 @@ export default defineConfig({
     environment: 'node', // Node.js runtime for testing, suitable for server-side code
     globals: true,
     // Exclude tests folder for E2E tests(Playwright)
-    exclude: ['**/node_modules/**', '**/tests/**'],
+    exclude: ['**/node_modules/**', '**/tests/**', 'e2e/**'],
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
   },
   resolve: {
