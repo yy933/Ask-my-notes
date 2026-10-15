@@ -52,6 +52,7 @@ export default function ChatPage() {
                 )}
 
                 <Card
+                  data-testid={msg.role === 'user' ? 'user-message' : 'ai-message'}
                   className={`max-w-[80%] p-4 leading-relaxed ${
                     msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                   }`}
