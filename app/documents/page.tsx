@@ -51,9 +51,9 @@ export default function DocumentsPage() {
     };
   }, []);
 
-  // 2. 刪除檔案與同步清除向量機制 (Sync-Deletion)
+  // 2. Sync-Deletion
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this document and its AI index?')) {
+    if (!window.confirm('Are you sure you want to delete this document?')) {
       return;
     }
 
