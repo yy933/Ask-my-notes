@@ -51,9 +51,9 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 ### Step 5: Citations, Document Management & UI Polish
 
-- [] Document Management & List View:
-  - [] Build Document List UI (display file name, uploaded time, processing status, etc.).
-  - [] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
+- [x] Document Management & List View:
+  - [x] Build Document List UI (display file name, uploaded time, processing status, etc.).
+  - [x] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
 - [] Source Citations & Preview Modal/Drawer:
   - [] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
   - [] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
