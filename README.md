@@ -49,12 +49,17 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
   - [x] _Subtask 2: Frontend streaming receiver (Handle `ReadableStream` and decode typewriter response)_
   - [x] _Subtask 3: UI polish & UX interactions (Auto-scroll to bottom, source citations rendering, loading states)_
 
-### Step 5: Citations & UI Polish
+### Step 5: Citations, Document Management & UI Polish
 
-- [] Add **"Source Citations"** beneath Chatbot responses (referencing document title and chunk/page index)
-- [] Allow users to click citations to open a Modal/Drawer and view the original chunk text
-- [] Implement Toast notifications (upload success, error handling) and global loading states
-- [] Build Document List view: display uploaded files with sync-deletion support (removes vector records simultaneously)
+- [] Document Management & List View:
+  - [] Build Document List UI (display file name, uploaded time, processing status, etc.).
+  - [] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
+- [] Source Citations & Preview Modal/Drawer:
+  - [] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
+  - [] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
+- [] Global UI Polish & Notifications:
+  - [] Implement Toast notifications (for upload success, file deletion, and error handling).
+  - [] Add global loading states, error boundaries, and empty states for the document management view.
 
 ### Step 6: Deployment, Testing & Security Guardrails
 
