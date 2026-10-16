@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { FileText, Trash2, Loader2, UploadCloud, Bot, Eye } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { FileText, Trash2, Loader2, UploadCloud, Bot, Eye, Download } from 'lucide-react';
 import Link from 'next/link';
 import type { DocumentItem } from '@/types';
+import { cn } from 'cn';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -135,17 +137,46 @@ export default function DocumentsPage() {
                   </div>
                 </div>
 
+                {/* Button group: Preview, Download, Delete */}
                 <div className="flex items-center justify-end gap-2 border-t pt-3 md:border-t-0 md:pt-0">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="cursor-pointer"
-                    disabled={!doc.file_path}
+                  {/* Preview btn */}
+                  <a
+                    href={doc.file_path || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled={!doc.file_path}
+                    className={cn(
+                      buttonVariants({ variant: 'secondary', size: 'sm' }),
+                      !doc.file_path && 'pointer-events-none opacity-50'
+                    )}
+                    onClick={(e) => {
+                      if (!doc.file_path) e.preventDefault();
+                    }}
                   >
                     <Eye className="mr-1.5 h-4 w-4" />
                     Preview
-                  </Button>
+                  </a>
 
+                  {/* Download btn */}
+                  <a
+                    href={doc.file_path || '#'}
+                    download={doc.title}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled={!doc.file_path}
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      !doc.file_path && 'pointer-events-none opacity-50'
+                    )}
+                    onClick={(e) => {
+                      if (!doc.file_path) e.preventDefault();
+                    }}
+                  >
+                    <Download className="mr-1.5 h-4 w-4" />
+                    Download
+                  </a>
+
+                  {/* Delete btn */}
                   <Button
                     variant="destructive"
                     size="sm"
