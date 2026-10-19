@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Bot, Sparkles, Menu, CircleUser } from 'lucide-react';
+import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut } from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -60,6 +60,18 @@ export function Navbar() {
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link href="/chat" passHref>
+                  <NavigationMenuLink
+                    className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                      pathname === '/chat' ? 'bg-accent text-accent-foreground font-semibold' : ''
+                    }`}
+                  >
+                    <LogOut className="text-primary h-4 w-4" />
+                    <span>Logout</span>
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -105,6 +117,18 @@ export function Navbar() {
                 >
                   <Bot className="text-primary h-4 w-4" />
                   <span>Ask Chatbot</span>
+                </Link>
+                <Link
+                  href="/chat"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === '/chat'
+                      ? 'bg-accent text-accent-foreground font-semibold'
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <LogOut className="text-primary h-4 w-4" />
+                  <span>Logout</span>
                 </Link>
               </div>
             </SheetContent>
