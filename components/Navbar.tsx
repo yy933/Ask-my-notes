@@ -11,7 +11,8 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from 'cn';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ModeToggle } from '@/components/ModeToggle';
 
@@ -81,11 +82,11 @@ export function Navbar() {
         {/* Mobile Hamburger Menu (for mobile) */}
         <div className="flex md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger>
-              <Button variant="outline" size="icon" className="cursor-pointer">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
+            <SheetTrigger
+              className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'cursor-pointer')}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
             </SheetTrigger>
             <SheetContent side="right" className="flex w-[280px] flex-col sm:w-[320px]">
               <SheetHeader>
