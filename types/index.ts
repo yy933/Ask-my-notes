@@ -19,3 +19,10 @@ export type Message = {
 export type FormattedMessageProps = {
   content: string;
 };
+
+export type DocumentItem = {
+  id: string;
+  title: string;
+  created_at: string;
+  file_path?: string;
+};

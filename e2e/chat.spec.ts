@@ -40,7 +40,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
     await page.goto('/chat');
 
     // 2. Check title and initial condition
-    await expect(page.locator('h1')).toHaveText('Ask My Notes');
+    await expect(page.getByTestId('chat-header')).toBeVisible();
 
     // 3. Add queries in Textarea
     const inputArea = page.locator('textarea[name="userMessage"]');

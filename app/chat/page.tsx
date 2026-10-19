@@ -20,13 +20,15 @@ export default function ChatPage() {
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
-      <div className="flex h-full w-full max-w-4xl flex-col">
-        {/* Header */}
-        <header className="mb-4 flex items-center justify-between border-b py-4">
-          <h1 className="flex items-center gap-2 text-xl font-bold">
-            <Bot className="text-primary h-6 w-6" />
-            Ask My Notes
-          </h1>
+      <div className="mx-auto flex h-full w-full max-w-4xl flex-col">
+        {/* Title */}
+        <header className="mb-6 flex items-center justify-center border-b py-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-2xl font-bold" data-testid="chat-header">
+              <Bot className="text-primary h-6 w-6" />
+              Ask Chatbot
+            </h1>
+          </div>
         </header>
 
         {/* Message List Area */}
