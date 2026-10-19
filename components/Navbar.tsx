@@ -36,31 +36,29 @@ export function Navbar() {
           <NavigationMenu>
             <NavigationMenuList className="gap-1">
               <NavigationMenuItem>
-                <Link href="/documents" passHref>
-                  <NavigationMenuLink
-                    className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                      pathname === '/documents'
-                        ? 'bg-accent text-accent-foreground font-semibold'
-                        : ''
-                    }`}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Documents</span>
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  href="/documents"
+                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                    pathname === '/documents'
+                      ? 'bg-accent text-accent-foreground font-semibold'
+                      : ''
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Documents</span>
+                </NavigationMenuLink>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link href="/chat" passHref>
-                  <NavigationMenuLink
-                    className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                      pathname === '/chat' ? 'bg-accent text-accent-foreground font-semibold' : ''
-                    }`}
-                  >
-                    <Bot className="text-primary h-4 w-4" />
-                    <span>Ask Chatbot</span>
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  href="/chat"
+                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                    pathname === '/chat' ? 'bg-accent text-accent-foreground font-semibold' : ''
+                  }`}
+                >
+                  <Bot className="text-primary h-4 w-4" />
+                  <span>Ask Chatbot</span>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -99,7 +97,7 @@ export function Navbar() {
 
               {/* Main menu */}
               <div className="mt-6 flex flex-1 flex-col gap-1">
-                <Link
+                <a
                   href="/documents"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -110,9 +108,9 @@ export function Navbar() {
                 >
                   <FileText className="h-4 w-4" />
                   <span>Documents</span>
-                </Link>
+                </a>
 
-                <Link
+                <a
                   href="/chat"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -123,7 +121,7 @@ export function Navbar() {
                 >
                   <Bot className="text-primary h-4 w-4" />
                   <span>Ask Chatbot</span>
-                </Link>
+                </a>
               </div>
 
               {/* Tools */}
