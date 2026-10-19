@@ -24,7 +24,7 @@ export default function ChatPage() {
         {/* Title */}
         <header className="mb-6 flex items-center justify-center border-b py-4">
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
+            <h1 className="flex items-center gap-2 text-2xl font-bold" data-testid="chat-header">
               <Bot className="text-primary h-6 w-6" />
               Ask Chatbot
             </h1>
