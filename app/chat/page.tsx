@@ -1,22 +1,41 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, FileText, BookOpen, Eye, Download } from 'lucide-react';
 import { FormattedMessage } from '@/components/FormattedMessage';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from 'cn';
+import type { SourceItem } from '@/types';
 
 export default function ChatPage() {
   const { messages, input, setInput, formAction, isPending } = useChat();
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const handleSelectSource = (source: SourceItem) => {
+    setSelectedSource(source);
+    setIsSheetOpen(true);
+  };
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
+  console.log(selectedSource);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
@@ -40,46 +59,52 @@ export default function ChatPage() {
               </div>
             )}
 
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex items-start gap-3 ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {msg.role === 'model' && (
-                  <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                    <Bot className="text-primary h-4 w-4" />
-                  </div>
-                )}
-
-                <Card
-                  data-testid={msg.role === 'user' ? 'user-message' : 'ai-message'}
-                  className={`max-w-[80%] p-4 leading-relaxed ${
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+            {messages.map((msg, index) => {
+              return (
+                <div
+                  key={index}
+                  className={`flex items-start gap-3 ${
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  {msg.content ? (
-                    msg.role === 'model' ? (
-                      <FormattedMessage content={msg.content} />
-                    ) : (
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching notes & thinking...
-                    </span>
+                  {msg.role === 'model' && (
+                    <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                      <Bot className="text-primary h-4 w-4" />
+                    </div>
                   )}
-                </Card>
 
-                {msg.role === 'user' && (
-                  <div className="bg-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
-              </div>
-            ))}
+                  <Card
+                    data-testid={msg.role === 'user' ? 'user-message' : 'ai-message'}
+                    className={`max-w-[80%] p-4 leading-relaxed ${
+                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    }`}
+                  >
+                    {msg.content ? (
+                      msg.role === 'model' ? (
+                        <FormattedMessage
+                          content={msg.content}
+                          sources={msg.sources}
+                          onSelectSource={handleSelectSource}
+                        />
+                      ) : (
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                      )
+                    ) : (
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Searching notes & thinking...
+                      </span>
+                    )}
+                  </Card>
+
+                  {msg.role === 'user' && (
+                    <div className="bg-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                      <User className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {/* Bottom ref */}
             <div ref={bottomRef} />
           </div>
@@ -110,6 +135,74 @@ export default function ChatPage() {
           </Button>
         </form>
       </div>
+      {/* Sheet (Check original chunk text) */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="flex w-[350px] flex-col sm:w-[450px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <BookOpen className="text-primary h-5 w-5" />
+              Source Citation
+            </SheetTitle>
+            <SheetDescription>Original knowledge excerpt referenced by the AI.</SheetDescription>
+          </SheetHeader>
+
+          {selectedSource && (
+            <div className="mt-6 flex flex-1 flex-col gap-4 overflow-y-auto pr-1">
+              {/* Chunk source title */}
+              <div className="bg-muted/50 mx-4 space-y-1 rounded-lg border p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <FileText className="text-primary h-4 w-4 shrink-0" />
+                  <span>{selectedSource.title}</span>
+                </div>
+                <p className="text-muted-foreground pl-6 text-xs">
+                  Page: #{selectedSource.chunkIndex}
+                </p>
+                {/* 檔案預覽與下載按鈕群組 */}
+                {selectedSource.file_path && (
+                  <div className="flex items-center gap-2 border-t pt-2">
+                    <a
+                      href={selectedSource.file_path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        buttonVariants({ variant: 'secondary', size: 'sm' }),
+                        'flex-1 cursor-pointer'
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-4 w-4" />
+                      Preview Original File
+                    </a>
+
+                    <a
+                      href={selectedSource.file_path}
+                      download={selectedSource.title}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        buttonVariants({ variant: 'outline', size: 'sm' }),
+                        'flex-1 cursor-pointer'
+                      )}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Download
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Original chunk text preview */}
+              <div className="mx-4 space-y-2">
+                <h4 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Original Excerpt Content
+                </h4>
+                <div className="bg-card text-foreground/90 rounded-lg border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-2xs">
+                  {selectedSource.content}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

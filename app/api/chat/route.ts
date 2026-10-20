@@ -12,11 +12,25 @@ export async function POST(req: Request) {
     if (!latestMessage) {
       return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
     }
-    // 1. Search for relevant chunks based on the latest message and get Top 3-5 results
-
+    // 1. Search for relevant chunks based on the latest message and get Top 3-5 result
     const relevantChunks = await searchSimilarChunks(latestMessage, 4, 0.4);
 
     // 2. Merge the relevant chunks into a single string to provide context for the AI model
+    const uniqueDocsMap = new Map();
+    relevantChunks.forEach((chunk, index) => {
+      const docTitle = chunk.document?.title || 'Unknown Document';
+      if (!uniqueDocsMap.has(docTitle)) {
+        uniqueDocsMap.set(docTitle, {
+          id: chunk.id,
+          title: docTitle,
+          chunkIndex: chunk.metadata?.chunkIndex || 1,
+          content: chunk.content, // 或合併多個 chunk 的 content
+          file_path: chunk.document?.file_path || undefined,
+        });
+      }
+    });
+    const sourcesForClient = Array.from(uniqueDocsMap.values());
+
     const contextText = relevantChunks
       .map((chunk, index) => {
         return `[Source ${index + 1}] (File: ${chunk.metadata?.fileName || 'Unknown'})\n${chunk.content}`;
@@ -56,8 +70,12 @@ export async function POST(req: Request) {
         controller.close();
       },
     });
+    // send source as custom header to frontend
     return new Response(readable, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Chat-Sources': encodeURIComponent(JSON.stringify(sourcesForClient)),
+      },
     });
   } catch (error) {
     console.error('Error in chat API:', error);
@@ -68,3 +86,40 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// (Only for UI tests)
+// import { NextResponse } from 'next/server';
+
+// export async function POST(req: Request) {
+//   try {
+//     const { messages } = await req.json();
+//     const latestMessage = messages[messages.length - 1]?.content;
+
+//     if (!latestMessage) {
+//       return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
+//     }
+
+//     // 💡 暫時手動寫死測試用的字串（包含 [Source 1] 標籤）
+//     const mockReply = `根據你的筆記，React 19 帶來了全新的 useActionState 鉤子 [Source 1]，能大幅簡化非同步表單狀態管理！`;
+
+//     const encoder = new TextEncoder();
+//     const readable = new ReadableStream({
+//       async start(controller) {
+//         // 模擬串流打字機效果，每 50ms 吐出一部分文字
+//         for (let i = 0; i < mockReply.length; i += 3) {
+//           const chunk = mockReply.slice(i, i + 3);
+//           controller.enqueue(encoder.encode(chunk));
+//           await new Promise((resolve) => setTimeout(resolve, 50));
+//         }
+//         controller.close();
+//       },
+//     });
+
+//     return new Response(readable, {
+//       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+//     });
+//   } catch (error) {
+//     console.error('Error in mock chat API:', error);
+//     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+//   }
+// }

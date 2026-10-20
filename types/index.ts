@@ -9,15 +9,30 @@ export type ChunkSearchResult = {
   content: string;
   metadata: { chunkIndex: number; fileName: string };
   similarity: number;
+  document?: {
+    title?: string;
+    file_path?: string | null;
+  };
 };
 
 export type Message = {
   role: 'user' | 'model';
   content: string;
+  sources?: SourceItem[];
+};
+
+export type SourceItem = {
+  id?: string;
+  title: string;
+  chunkIndex: number;
+  content: string;
+  file_path?: string;
 };
 
 export type FormattedMessageProps = {
   content: string;
+  sources?: SourceItem[];
+  onSelectSource?: (source: SourceItem) => void;
 };
 
 export type DocumentItem = {
