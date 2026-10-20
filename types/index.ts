@@ -18,6 +18,7 @@ export type ChunkSearchResult = {
 export type Message = {
   role: 'user' | 'model';
   content: string;
+  sources?: SourceItem[];
 };
 
 export type SourceItem = {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import type { Message } from '@/types';
+import type { Message, SourceItem } from '@/types';
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +29,15 @@ export function useChat() {
 
       if (!response.ok) throw new Error('API request failed');
 
+      const sourceHeader = response.headers.get('X-Chat-Sources');
+      let sources: SourceItem[] = [];
+      if (sourceHeader) {
+        try {
+          sources = JSON.parse(decodeURIComponent(sourceHeader));
+        } catch (error) {
+          console.warn('Failed to parse X-Chat-Sources header', error);
+        }
+      }
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) throw new Error('Could not get reader from response body');
@@ -44,7 +53,7 @@ export function useChat() {
 
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'model', content: accumulatedText };
+          updated[updated.length - 1] = { role: 'model', content: accumulatedText, sources };
           return updated;
         });
       }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Loader2, FileText, BookOpen } from 'lucide-react';
+import { Send, Bot, User, Loader2, FileText, BookOpen, Eye, Download } from 'lucide-react';
 import { FormattedMessage } from '@/components/FormattedMessage';
 import {
   Sheet,
@@ -15,6 +15,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from 'cn';
 import type { SourceItem } from '@/types';
 
 export default function ChatPage() {
@@ -57,14 +59,6 @@ export default function ChatPage() {
             )}
 
             {messages.map((msg, index) => {
-              const mockSources: SourceItem[] = [
-                {
-                  title: 'React 19 與 Next.js 核心筆記.txt',
-                  chunkIndex: 1,
-                  content:
-                    'React 19 引入了全新鉤子如 useActionState，讓表單處理與非同步狀態管理變得更直覺。在伺服器端渲染（SSR）與 Server Actions 的搭配下，能夠減少大量手動維護 loading 狀態的程式碼。',
-                },
-              ];
               return (
                 <div
                   key={index}
@@ -88,7 +82,7 @@ export default function ChatPage() {
                       msg.role === 'model' ? (
                         <FormattedMessage
                           content={msg.content}
-                          sources={mockSources}
+                          sources={msg.sources}
                           onSelectSource={handleSelectSource}
                         />
                       ) : (
@@ -162,6 +156,37 @@ export default function ChatPage() {
                 <p className="text-muted-foreground pl-6 text-xs">
                   Page: #{selectedSource.chunkIndex}
                 </p>
+                {/* 檔案預覽與下載按鈕群組 */}
+                {selectedSource.file_path && (
+                  <div className="flex items-center gap-2 border-t pt-2">
+                    <a
+                      href={selectedSource.file_path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        buttonVariants({ variant: 'secondary', size: 'sm' }),
+                        'flex-1 cursor-pointer'
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-4 w-4" />
+                      Preview Original File
+                    </a>
+
+                    <a
+                      href={selectedSource.file_path}
+                      download={selectedSource.title}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        buttonVariants({ variant: 'outline', size: 'sm' }),
+                        'flex-1 cursor-pointer'
+                      )}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Download
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Original chunk text preview */}
