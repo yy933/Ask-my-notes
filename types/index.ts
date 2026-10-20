@@ -9,6 +9,10 @@ export type ChunkSearchResult = {
   content: string;
   metadata: { chunkIndex: number; fileName: string };
   similarity: number;
+  document?: {
+    title?: string;
+    file_path?: string | null;
+  };
 };
 
 export type Message = {
@@ -21,6 +25,7 @@ export type SourceItem = {
   title: string;
   chunkIndex: number;
   content: string;
+  file_path?: string;
 };
 
 export type FormattedMessageProps = {
