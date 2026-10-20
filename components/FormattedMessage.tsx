@@ -57,9 +57,7 @@ export function FormattedMessage({ content, sources = [], onSelectSource }: Form
           <ReactMarkdown
             key={index}
             components={{
-              // 自訂 p 標籤，避免預設 margin 破壞內聯行高
               p: ({ children }) => <span>{children}</span>,
-              // 自訂 ul / ol，確保清單樣式縮排漂亮
               ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-4">{children}</ul>,
               ol: ({ children }) => (
                 <ol className="my-2 list-decimal space-y-1 pl-4">{children}</ol>
