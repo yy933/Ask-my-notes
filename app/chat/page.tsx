@@ -35,6 +35,7 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
+  console.log(selectedSource);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">

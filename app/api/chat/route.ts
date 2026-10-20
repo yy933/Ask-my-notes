@@ -12,18 +12,24 @@ export async function POST(req: Request) {
     if (!latestMessage) {
       return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
     }
-    // 1. Search for relevant chunks based on the latest message and get Top 3-5 results
-
+    // 1. Search for relevant chunks based on the latest message and get Top 3-5 result
     const relevantChunks = await searchSimilarChunks(latestMessage, 4, 0.4);
 
     // 2. Merge the relevant chunks into a single string to provide context for the AI model
-    const sourcesForClient = relevantChunks.map((chunk, index) => ({
-      id: chunk.id,
-      title: chunk.document?.title || 'Unknown Document',
-      chunkIndex: chunk.metadata.chunkIndex || index + 1,
-      content: chunk.content,
-      file_path: chunk.document?.file_path || undefined,
-    }));
+    const uniqueDocsMap = new Map();
+    relevantChunks.forEach((chunk, index) => {
+      const docTitle = chunk.document?.title || 'Unknown Document';
+      if (!uniqueDocsMap.has(docTitle)) {
+        uniqueDocsMap.set(docTitle, {
+          id: chunk.id,
+          title: docTitle,
+          chunkIndex: chunk.metadata?.chunkIndex || 1,
+          content: chunk.content, // 或合併多個 chunk 的 content
+          file_path: chunk.document?.file_path || undefined,
+        });
+      }
+    });
+    const sourcesForClient = Array.from(uniqueDocsMap.values());
 
     const contextText = relevantChunks
       .map((chunk, index) => {
