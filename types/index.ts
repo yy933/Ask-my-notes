@@ -16,8 +16,17 @@ export type Message = {
   content: string;
 };
 
+export type SourceItem = {
+  id?: string;
+  title: string;
+  chunkIndex: number;
+  content: string;
+};
+
 export type FormattedMessageProps = {
   content: string;
+  sources?: SourceItem[];
+  onSelectSource?: (source: SourceItem) => void;
 };
 
 export type DocumentItem = {
