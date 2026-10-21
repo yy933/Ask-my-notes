@@ -54,9 +54,9 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Document Management & List View:
   - [x] Build Document List UI (display file name, uploaded time, processing status, etc.).
   - [x] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
-- [] Source Citations & Preview Modal/Drawer:
-  - [] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
-  - [] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
+- [x] Source Citations & Preview Modal/Drawer:
+  - [x] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
+  - [x] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
 - [] Global UI Polish & Notifications:
   - [] Implement Toast notifications (for upload success, file deletion, and error handling).
   - [] Add global loading states, error boundaries, and empty states for the document management view.
