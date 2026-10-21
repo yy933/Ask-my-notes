@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { truncateFileName } from '@/lib/truncateFileName';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
 import type { SourceItem } from '@/types';
@@ -152,7 +153,7 @@ export default function ChatPage() {
               <div className="bg-muted/50 mx-4 space-y-1 rounded-lg border p-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <FileText className="text-primary h-4 w-4 shrink-0" />
-                  <span>{selectedSource.title}</span>
+                  <span>{truncateFileName(selectedSource.title, 70)}</span>
                 </div>
                 {/* Preview and download btn group */}
                 {selectedSource.file_path && (
@@ -193,7 +194,9 @@ export default function ChatPage() {
                   Original Excerpt Content
                 </h4>
                 <div className="bg-card text-foreground/90 rounded-lg border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-2xs">
-                  {selectedSource.content}
+                  {selectedSource.content.length > 300
+                    ? `${selectedSource.content.slice(0, 300)}`
+                    : selectedSource.content}
                 </div>
               </div>
             </div>

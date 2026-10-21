@@ -6,7 +6,10 @@ import type { FormattedMessageProps, SourceItem } from '@/types';
 
 export function FormattedMessage({ content, sources = [], onSelectSource }: FormattedMessageProps) {
   const parts = content.split(/(\[Source[^\]]+\])/g);
-  console.log(parts);
+
+  // Track which documents have already rendered a badge in this message,
+  // so multiple citations to the same document only show one badge.
+  const renderedSourceKeys = new Set<string>();
 
   return (
     <div className="leading-relaxed whitespace-pre-wrap">
@@ -24,10 +27,15 @@ export function FormattedMessage({ content, sources = [], onSelectSource }: Form
               {numbers.map((num, numIdx) => {
                 const targetNum = parseInt(num, 10) - 1;
 
-                const sourceData: SourceItem | undefined =
-                  sources.find((s) => s.chunkIndex === targetNum) ||
-                  sources[targetNum - 1] ||
-                  sources[0];
+                // sources array is already ordered to match [Source 1], [Source 2], ...
+                const sourceData: SourceItem | undefined = sources[targetNum] ?? sources[0];
+
+                if (!sourceData) return null;
+
+                // Deduplicate by document: only show one badge per document per message.
+                const sourceKey = sourceData.file_path || sourceData.title || String(sourceData.id);
+                if (renderedSourceKeys.has(sourceKey)) return null;
+                renderedSourceKeys.add(sourceKey);
 
                 return (
                   <Badge

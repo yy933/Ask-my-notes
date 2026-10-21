@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         });
       } else {
         // if the same doc has several chunks, combine the chunks as the content
-        const existing = groupedSourcesMap.get(uniqueKey);
+        const existing = groupedSourcesMap.get(uniqueKey)!;
         existing.content += `\n\n... [Excerpt Continues] ...\n\n${chunk.content}`;
       }
     });
