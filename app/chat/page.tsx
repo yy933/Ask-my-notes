@@ -154,10 +154,7 @@ export default function ChatPage() {
                   <FileText className="text-primary h-4 w-4 shrink-0" />
                   <span>{selectedSource.title}</span>
                 </div>
-                <p className="text-muted-foreground pl-6 text-xs">
-                  Page: #{selectedSource.chunkIndex}
-                </p>
-                {/* 檔案預覽與下載按鈕群組 */}
+                {/* Preview and download btn group */}
                 {selectedSource.file_path && (
                   <div className="flex items-center gap-2 border-t pt-2">
                     <a

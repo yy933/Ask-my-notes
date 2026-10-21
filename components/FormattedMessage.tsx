@@ -1,10 +1,12 @@
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
+import { truncateFileName } from '@/lib/truncateFileName';
 import type { FormattedMessageProps, SourceItem } from '@/types';
 
 export function FormattedMessage({ content, sources = [], onSelectSource }: FormattedMessageProps) {
   const parts = content.split(/(\[Source[^\]]+\])/g);
+  console.log(parts);
 
   return (
     <div className="leading-relaxed whitespace-pre-wrap">
@@ -32,11 +34,6 @@ export function FormattedMessage({ content, sources = [], onSelectSource }: Form
                     variant="secondary"
                     key={numIdx}
                     onClick={() => {
-                      console.log('--- 點擊偵錯 ---');
-                      console.log('AI 標籤裡的數字 (num):', num);
-                      console.log('計算出的陣列索引 (sourceIndex):', targetNum);
-                      console.log('傳入的 sources 陣列:', sources);
-                      console.log('找到的 sourceData:', sourceData);
                       if (sourceData && onSelectSource) {
                         onSelectSource(sourceData);
                       }
@@ -45,7 +42,7 @@ export function FormattedMessage({ content, sources = [], onSelectSource }: Form
                     title={sourceData ? `View source: ${sourceData.title}` : `Source ${num}`}
                   >
                     <FileText className="h-3 w-3" />
-                    Source {num}
+                    {truncateFileName(sourceData.title)}
                   </Badge>
                 );
               })}
