@@ -37,6 +37,7 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
   console.log(selectedSource);
+  console.log(selectedSource?.file_path);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
