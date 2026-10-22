@@ -15,6 +15,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { truncateFileName } from '@/lib/truncateFileName';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
@@ -27,17 +34,22 @@ export default function ChatPage() {
 
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const handleSelectSource = (source: SourceItem) => {
     setSelectedSource(source);
     setIsSheetOpen(true);
   };
 
+  function truncateContent(content: string) {
+    const splitContent = content.split(' ');
+    const splitIndex = splitContent.length > 300 ? 300 : splitContent.length - 1;
+    return splitContent.slice(0, splitIndex).join(' ') + '......';
+  }
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
-  console.log(selectedSource);
-  console.log(selectedSource?.file_path);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
@@ -160,9 +172,8 @@ export default function ChatPage() {
                 {selectedSource.file_path && (
                   <div className="flex items-center gap-2 border-t pt-2">
                     <a
-                      href={selectedSource.file_path}
-                      target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => setIsPreviewModalOpen(true)}
                       className={cn(
                         buttonVariants({ variant: 'secondary', size: 'sm' }),
                         'flex-1 cursor-pointer'
@@ -195,15 +206,28 @@ export default function ChatPage() {
                   Original Excerpt Content
                 </h4>
                 <div className="bg-card text-foreground/90 rounded-lg border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-2xs">
-                  {selectedSource.content.length > 300
-                    ? `${selectedSource.content.slice(0, 300)}`
-                    : selectedSource.content}
+                  {truncateContent(selectedSource.content)}
                 </div>
               </div>
             </div>
           )}
         </SheetContent>
       </Sheet>
+      {/* Content preview dialog */}
+      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="flex max-h-[80vh] max-w-3xl flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 truncate">
+              <FileText className="text-primary h-5 w-5" />
+              {selectedSource?.title}
+            </DialogTitle>
+            <DialogDescription>Original File Content Preview</DialogDescription>
+          </DialogHeader>
+          <div className="bg-muted/30 mt-4 flex-1 overflow-y-auto rounded-md border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap">
+            {selectedSource?.content}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
