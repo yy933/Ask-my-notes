@@ -10,3 +10,19 @@ export function truncateFileName(fileName: string, maxLength: number = 28): stri
 
   return `${fileName.slice(0, maxLength - 3)}...`;
 }
+
+// Truncate content for documents preview
+export function truncateContent(content: string = '', length: number) {
+  if (!content) return '';
+  if (content.length <= length) {
+    return content;
+  }
+
+  let truncated = content.slice(0, length);
+  const lastSpaceIndex = truncated.lastIndexOf(' ');
+  if (lastSpaceIndex > length - 25 && lastSpaceIndex > 0) {
+    truncated = truncated.slice(0, lastSpaceIndex);
+  }
+
+  return truncated.trim() + '......';
+}

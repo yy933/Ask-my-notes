@@ -1,7 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
-import { truncateFileName } from '@/lib/truncateFileName';
+import { truncateFileName } from '@/lib/truncateHelpers';
 import type { FormattedMessageProps, SourceItem } from '@/types';
 
 export function FormattedMessage({ content, sources = [], onSelectSource }: FormattedMessageProps) {

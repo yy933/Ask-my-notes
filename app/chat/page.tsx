@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { truncateFileName } from '@/lib/truncateFileName';
+import { truncateFileName, truncateContent } from '@/lib/truncateHelpers';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
 import type { SourceItem } from '@/types';
@@ -40,22 +40,6 @@ export default function ChatPage() {
     setSelectedSource(source);
     setIsSheetOpen(true);
   };
-
-  // Truncate content for documents preview
-  function truncateContent(content: string = '', length: number) {
-    if (!content) return '';
-    if (content.length <= length) {
-      return content;
-    }
-
-    let truncated = content.slice(0, length);
-    const lastSpaceIndex = truncated.lastIndexOf(' ');
-    if (lastSpaceIndex > length - 25 && lastSpaceIndex > 0) {
-      truncated = truncated.slice(0, lastSpaceIndex);
-    }
-
-    return truncated.trim() + '......';
-  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
