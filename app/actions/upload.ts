@@ -113,7 +113,7 @@ export async function processAndStoreDocument(
         success: true,
         documentId: docData.id,
         chunkCount: chunks.length,
-        message: `Successfully processed and stored document with ${chunks.length} chunks.`,
+        message: 'Your file is successfully uploaded.',
       };
     } catch (error) {
       // rollback: remove the orphan document (chunks cascade-delete)

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
+import { handleDownload } from '@/lib/fileDownload';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -178,10 +179,10 @@ export default function ChatPage() {
                     </a>
 
                     <a
-                      href={selectedSource.file_path}
-                      download={selectedSource.title}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() =>
+                        selectedSource?.file_path &&
+                        handleDownload(selectedSource.file_path, selectedSource.title)
+                      }
                       className={cn(
                         buttonVariants({ variant: 'outline', size: 'sm' }),
                         'flex-1 cursor-pointer'
