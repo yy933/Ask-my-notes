@@ -36,6 +36,9 @@ export async function POST(req: Request) {
         // if the same doc has several chunks, combine the chunks as the content
         const existing = groupedSourcesMap.get(uniqueKey)!;
         existing.content += `\n\n... [Excerpt Continues] ...\n\n${chunk.content}`;
+        if (!existing.file_path && filePath) {
+          existing.file_path = filePath;
+        }
       }
     });
 
@@ -46,6 +49,8 @@ export async function POST(req: Request) {
         return `[Source ${index + 1}] (Document Title: ${source.title})\n${source.content}`;
       })
       .join('\n\n');
+
+    console.log('sourcesForClient:', sourcesForClient);
 
     // 3. RAG System Prompt: Provide the context and the latest message to the AI model for generating a response
     const systemInstruction = `
