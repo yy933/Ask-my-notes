@@ -1,17 +1,25 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Karla, Montserrat, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const karla = Karla({
+  variable: '--font-karla',
   subsets: ['latin'],
+  display: 'swap',
+});
+
+const montserrat = Montserrat({
+  variable: '--font-montserrat',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -24,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${karla.variable} ${montserrat.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -33,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
         <link rel="manifest" href="/favicon/site.webmanifest" />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
