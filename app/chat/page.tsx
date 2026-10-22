@@ -41,9 +41,10 @@ export default function ChatPage() {
     setIsSheetOpen(true);
   };
 
-  function truncateContent(content: string) {
+  function truncateContent(content: string = '', length: number) {
+    if (!content) return '';
     const splitContent = content.split(' ');
-    const splitIndex = splitContent.length > 300 ? 300 : splitContent.length - 1;
+    const splitIndex = splitContent.length > length ? length : splitContent.length - 1;
     return splitContent.slice(0, splitIndex).join(' ') + '......';
   }
 
@@ -206,7 +207,7 @@ export default function ChatPage() {
                   Original Excerpt Content
                 </h4>
                 <div className="bg-card text-foreground/90 rounded-lg border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-2xs">
-                  {truncateContent(selectedSource.content)}
+                  {truncateContent(selectedSource.content, 40)}
                 </div>
               </div>
             </div>
@@ -224,7 +225,7 @@ export default function ChatPage() {
             <DialogDescription>Original File Content Preview</DialogDescription>
           </DialogHeader>
           <div className="bg-muted/30 mt-4 flex-1 overflow-y-auto rounded-md border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap">
-            {selectedSource?.content}
+            {truncateContent(selectedSource?.content, 300)}
           </div>
         </DialogContent>
       </Dialog>
