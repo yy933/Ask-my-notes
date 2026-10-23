@@ -78,27 +78,45 @@ export default function DocumentsPage() {
   }, []);
 
   // 2. Sync-Deletion
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (doc: DocumentItem) => {
     if (!window.confirm('Are you sure you want to delete this document?')) {
       return;
     }
 
     try {
-      setDeletingId(id);
+      setDeletingId(doc.id);
 
+      // 1. if file path exists, delete files from Supabase Storage
+      if (doc.file_path) {
+        const pathParts = doc.file_path.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+
+        if (fileName) {
+          const { error: storageError } = await supabase.storage
+            .from('documents')
+            .remove([fileName]);
+
+          if (storageError) {
+            console.warn('Error deleting file from storage:', storageError.message);
+          }
+        }
+      }
+
+      // 2. delete record from document_chunks table
       const { error: chunkError } = await supabase
         .from('document_chunks')
         .delete()
-        .eq('document_id', id);
+        .eq('document_id', doc.id);
 
       if (chunkError) console.warn('Error in deleting chunks: ', chunkError);
 
-      const { error: docError } = await supabase.from('documents').delete().eq('id', id);
+      // 3. delete record from documents table
+      const { error: docError } = await supabase.from('documents').delete().eq('id', doc.id);
 
       if (docError) throw docError;
 
-      // update UI state
-      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+      // 4. update UI state
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     } catch (error) {
       console.error('Deletion failed:', error);
       alert('Failed to delete the document. Please try again later.');
@@ -197,7 +215,7 @@ export default function DocumentsPage() {
                       variant="destructive"
                       size="sm"
                       className="cursor-pointer"
-                      onClick={() => handleDelete(doc.id)}
+                      onClick={() => handleDelete(doc)}
                       disabled={deletingId === doc.id}
                     >
                       {deletingId === doc.id ? (
