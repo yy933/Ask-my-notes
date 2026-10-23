@@ -16,13 +16,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import PreviewDialog from '@/components/preview-dialog';
 import { truncateFileName, truncateContent } from '@/lib/truncateHelpers';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
@@ -209,20 +204,12 @@ export default function ChatPage() {
         </SheetContent>
       </Sheet>
       {/* Content preview dialog */}
-      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
-        <DialogContent className="flex max-h-[80vh] max-w-3xl flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 truncate">
-              <FileText className="text-primary h-5 w-5" />
-              {selectedSource?.title}
-            </DialogTitle>
-            <DialogDescription>Original File Content Preview</DialogDescription>
-          </DialogHeader>
-          <div className="bg-muted/30 mt-4 flex-1 overflow-y-auto rounded-md border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap">
-            {truncateContent(selectedSource?.content, 450)}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PreviewDialog
+        isOpen={isPreviewModalOpen}
+        onOpenChange={setIsPreviewModalOpen}
+        title={selectedSource?.title ?? ''}
+        content={truncateContent(selectedSource?.content, 450)}
+      />
     </div>
   );
 }

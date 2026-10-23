@@ -24,7 +24,7 @@ export type Message = {
 export type SourceItem = {
   id?: string;
   title: string;
-  chunkIndex: number;
+  chunkIndex?: number;
   content: string;
   file_path?: string;
 };
@@ -40,4 +40,11 @@ export type DocumentItem = {
   title: string;
   created_at: string;
   file_path?: string;
+};
+
+export type PreviewDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  content: string;
 };
