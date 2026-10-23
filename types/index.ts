@@ -40,7 +40,7 @@ export type DocumentItem = {
   title: string;
   created_at: string;
   file_path?: string;
-  raw_text?: string;
+  raw_text?: string | null;
 };
 
 export type PreviewDialogProps = {
