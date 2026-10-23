@@ -7,11 +7,13 @@ import { supabase } from '@/lib/supabase';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const EMBEDDING_MODEL = 'gemini-embedding-001';
+const STORAGE_BUCKET = 'documents';
 
 export async function processAndStoreDocument(
   prevState: { success: boolean; message: string } | null,
   formData: FormData
 ) {
+  let uploadedStoragePath: string | null = null;
   try {
     const file = formData.get('file') as File;
     if (!file || file.size === 0) {
@@ -39,12 +41,33 @@ export async function processAndStoreDocument(
 
     if (!rawText.trim()) throw new Error('File content is empty');
 
-    // 2. add new data to `documents` table
+    // 2. upload file to supabase bucket
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(uniqueFileName, arrayBuffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (storageError || !storageData)
+      throw new Error(`Failed to create document record: ${storageError?.message}`);
+    uploadedStoragePath = storageData.path;
+
+    // get document public url
+    const { data: publicUrlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(uploadedStoragePath);
+    const publicUrl = publicUrlData.publicUrl;
+
+    // 3. write data into documents table
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
         title: file.name,
-        file_path: null, // since we are not storing the file in Supabase Storage for now, we can set this to null
+        file_path: publicUrl,
+        raw_text: rawText,
       })
       .select()
       .single();
@@ -53,11 +76,11 @@ export async function processAndStoreDocument(
       throw new Error(`Failed to create document record: ${docError?.message}`);
 
     try {
-      // 3. Chunking
+      // 4. Chunking
       const chunks = chunkText(rawText, 500, 50);
       if (chunks.length === 0) throw new Error('No chunks were created from the document content.');
 
-      // 4. Generate all embeddings first (to avoid partial inserts in case of an error)
+      // 5. Generate all embeddings first (to avoid partial inserts in case of an error)
       const rows = await Promise.all(
         chunks.map(async (chunk) => {
           // call Gemini embedding model to get embedding vector
@@ -83,14 +106,15 @@ export async function processAndStoreDocument(
         })
       );
 
-      // 5. Insert all chunks into `document_chunks` table
+      // 6. Insert all chunks into `document_chunks` table
       const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
       if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
+
       return {
         success: true,
         documentId: docData.id,
         chunkCount: chunks.length,
-        message: `Successfully processed and stored document with ${chunks.length} chunks.`,
+        message: 'Your file is successfully uploaded.',
       };
     } catch (error) {
       // rollback: remove the orphan document (chunks cascade-delete)
@@ -99,6 +123,10 @@ export async function processAndStoreDocument(
     }
   } catch (error: unknown) {
     console.error('File Processing Error:', error);
+    // if error occured before data insertion, remove the uploaded files
+    if (uploadedStoragePath) {
+      await supabase.storage.from(STORAGE_BUCKET).remove([uploadedStoragePath]);
+    }
     return {
       success: false,
       message: error instanceof Error ? error.message : 'File processing failed',

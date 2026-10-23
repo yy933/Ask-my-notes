@@ -26,7 +26,15 @@ export default function FileUpload() {
             {isPending ? 'Processing...' : 'Upload your file'}
           </Button>
         </form>
-        {state?.message && <p className="mt-4 text-center text-sm font-medium">{state.message}</p>}
+        {state?.message && (
+          <p
+            className={`mt-4 text-center text-sm font-medium ${
+              state.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'
+            }`}
+          >
+            {state.message}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

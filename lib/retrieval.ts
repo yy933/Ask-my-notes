@@ -42,7 +42,7 @@ export async function searchSimilarChunks(
   if (chunks.length === 0) return [];
 
   // get "title" and 'file_path" from documents table
-  const docIds = Array.from(new Set(chunks.map((c) => c.document_id).filter(Boolean)));
+  const docIds = Array.from(new Set(chunks.map((chunk) => chunk.document_id).filter(Boolean)));
 
   if (docIds.length > 0) {
     const { data: docsData } = await supabase
