@@ -181,18 +181,15 @@ export default function DocumentsPage() {
 
                     {/* Download btn */}
                     <a
-                      href={doc.file_path || '#'}
-                      download={doc.title}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() =>
+                        selectedSource?.file_path &&
+                        handleDownload(selectedSource.file_path, selectedSource.title)
+                      }
                       aria-disabled={!doc.file_path}
                       className={cn(
                         buttonVariants({ variant: 'outline', size: 'sm' }),
                         !doc.file_path && 'pointer-events-none opacity-50'
                       )}
-                      onClick={(e) => {
-                        if (!doc.file_path) e.preventDefault();
-                      }}
                     >
                       <Download className="mr-1.5 h-4 w-4" />
                       Download
