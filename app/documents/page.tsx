@@ -162,18 +162,20 @@ export default function DocumentsPage() {
 
                   {/* Button group: Preview, Download, Delete */}
                   <div className="flex items-center justify-end gap-2 border-t pt-3 md:border-t-0 md:pt-0">
-                    {/* Preview btn */}
                     <a
                       onClick={() => handlePreview(doc)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-disabled={!doc.file_path}
+                      aria-disabled={!doc.file_path || isPreviewLoading}
                       className={cn(
                         buttonVariants({ variant: 'secondary', size: 'sm' }),
-                        !doc.file_path && 'pointer-events-none opacity-50'
+                        'cursor-pointer',
+                        (!doc.file_path || isPreviewLoading) && 'pointer-events-none opacity-50'
                       )}
                     >
-                      <Eye className="mr-1.5 h-4 w-4" />
+                      {isPreviewLoading ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="mr-1.5 h-4 w-4" />
+                      )}
                       Preview
                     </a>
 
