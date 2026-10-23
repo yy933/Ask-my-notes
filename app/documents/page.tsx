@@ -102,20 +102,12 @@ export default function DocumentsPage() {
         }
       }
 
-      // 2. delete record from document_chunks table
-      const { error: chunkError } = await supabase
-        .from('document_chunks')
-        .delete()
-        .eq('document_id', doc.id);
-
-      if (chunkError) console.warn('Error in deleting chunks: ', chunkError);
-
-      // 3. delete record from documents table
+      // 2. delete record from documents table
       const { error: docError } = await supabase.from('documents').delete().eq('id', doc.id);
 
       if (docError) throw docError;
 
-      // 4. update UI state
+      // 3. update UI state
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     } catch (error) {
       console.error('Deletion failed:', error);
