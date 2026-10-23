@@ -67,6 +67,7 @@ export async function processAndStoreDocument(
       .insert({
         title: file.name,
         file_path: publicUrl,
+        raw_text: rawText,
       })
       .select()
       .single();

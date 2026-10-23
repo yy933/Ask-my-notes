@@ -12,7 +12,6 @@ import { cn } from 'cn';
 import { buttonVariants } from '@/components/ui/button';
 import { handleDownload } from '@/lib/fileDownload';
 import { truncateContent } from '@/lib/truncateHelpers';
-import { fetchFullDocumentContent } from '@/lib/fetchDocumentContent';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -26,12 +25,10 @@ export default function DocumentsPage() {
     try {
       setIsPreviewLoading(true);
 
-      const fullContent = await fetchFullDocumentContent(doc.id);
-
       setSelectedSource({
         id: doc.id,
         title: doc.title,
-        content: fullContent,
+        content: doc.raw_text || 'No content available.',
         file_path: doc.file_path,
       });
 
