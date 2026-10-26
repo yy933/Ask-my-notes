@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
+const UPLOAD_TIPS = [
+  '☕ Fun Fact: The AI is hard at work reading your file. Grab a cup of coffee and relax!',
+  '✨ Tip: Once uploaded, you can instantly ask questions about this document in the Chatbot page!',
+  '🔍 Tip: Both .txt and .pdf files are supported for precise vector search.',
+  '🤖 AI Whisper: "This document looks packed with some fascinating insights!"',
+];
+
 export default function FileUpload() {
   const [state, formAction, isPending] = useActionState(processAndStoreDocument, null);
   const [uploadStep, setUploadStep] = useState<string>('');
@@ -14,17 +21,14 @@ export default function FileUpload() {
     if (!isPending) {
       return;
     }
-    const timer1 = setTimeout(() => {
-      setUploadStep('Uploading your file...');
-    }, 2000);
-
-    const timer2 = setTimeout(() => {
-      setUploadStep('Reading through the file...');
-    }, 6000);
+    let index = 0;
+    const interval = setInterval(() => {
+      index = (index + 1) % UPLOAD_TIPS.length;
+      setUploadStep(UPLOAD_TIPS[index]);
+    }, 3500); // texts change every 3.5s
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearInterval(interval);
     };
   }, [isPending]);
 
@@ -64,7 +68,7 @@ export default function FileUpload() {
             </p>
           </div>
         )}
-        {state?.message && (
+        {!isPending && state?.message && (
           <p
             className={`mt-4 text-center text-sm font-medium ${
               state.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'
