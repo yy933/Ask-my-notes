@@ -34,7 +34,6 @@ export function useChat() {
       if (sourceHeader) {
         try {
           sources = JSON.parse(decodeURIComponent(sourceHeader));
-          console.log('Frontend received sources: ', sources);
         } catch (error) {
           console.warn('Failed to parse X-Chat-Sources header', error);
         }
