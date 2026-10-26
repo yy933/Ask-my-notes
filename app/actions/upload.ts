@@ -5,6 +5,7 @@ import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
 import { supabase } from '@/lib/supabase';
 import { getFriendlyErrorMessage } from '@/lib/errorHandler';
+import { after } from 'next/server';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const EMBEDDING_MODEL = 'gemini-embedding-001';
@@ -76,58 +77,56 @@ export async function processAndStoreDocument(
     if (docError || !docData)
       throw new Error(`Failed to create document record: ${docError?.message}`);
 
-    try {
-      // 4. Chunking
-      const chunks = chunkText(rawText, 1000, 100);
-      if (chunks.length === 0) throw new Error('No chunks were created from the document content.');
+    // 4. Chunking (chunking and embedding in background with after())
+    after(async () => {
+      try {
+        const chunks = chunkText(rawText, 1000, 100);
+        if (chunks.length === 0)
+          throw new Error('No chunks were created from the document content.');
 
-      // 5. Generate embeddings in batches to avoid Gemini Free Tier Rate Limit (100 req/min)
-      const rows = [];
+        // 5. Generate embeddings in batches to avoid Gemini Free Tier Rate Limit (100 req/min)
+        const rows = [];
 
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
 
-        const embeddingResponse = await ai.models.embedContent({
-          model: EMBEDDING_MODEL,
-          contents: chunk.content,
-          config: {
-            outputDimensionality: 768,
-            taskType: 'RETRIEVAL_DOCUMENT',
-          },
-        });
+          const embeddingResponse = await ai.models.embedContent({
+            model: EMBEDDING_MODEL,
+            contents: chunk.content,
+            config: {
+              outputDimensionality: 768,
+              taskType: 'RETRIEVAL_DOCUMENT',
+            },
+          });
 
-        const embeddingVector = embeddingResponse.embeddings?.[0]?.values;
-        if (!embeddingVector) throw new Error(`Embedding failed for chunk ${chunk.chunkIndex}`);
+          const embeddingVector = embeddingResponse.embeddings?.[0]?.values;
+          if (!embeddingVector) throw new Error(`Embedding failed for chunk ${chunk.chunkIndex}`);
 
-        // Prepare the row for insertion
-        rows.push({
-          document_id: docData.id,
-          content: chunk.content,
-          embedding: JSON.stringify(embeddingVector),
-          metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
-        });
+          // Prepare the row for insertion
+          rows.push({
+            document_id: docData.id,
+            content: chunk.content,
+            embedding: JSON.stringify(embeddingVector),
+            metadata: { chunkIndex: chunk.chunkIndex, fileName: file.name },
+          });
 
-        // pause between each chunk
-        if (i < chunks.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          // pause between each chunk
+          if (i < chunks.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
         }
+        // 6. Insert all chunks into `document_chunks` table
+        if (rows.length > 0) {
+          await supabase.from('document_chunks').insert(rows);
+        }
+
+        console.log(`Background embedding completed for document: ${docData.id}`);
+      } catch (bgError) {
+        // rollback: remove the orphan document (chunks cascade-delete)
+        await supabase.from('documents').delete().eq('id', docData.id);
+        console.error('Background embedding failed:', bgError);
       }
-
-      // 6. Insert all chunks into `document_chunks` table
-      const { error: chunkError } = await supabase.from('document_chunks').insert(rows);
-      if (chunkError) throw new Error(`Failed to insert document chunks: ${chunkError.message}`);
-
-      return {
-        success: true,
-        documentId: docData.id,
-        chunkCount: chunks.length,
-        message: 'Your file is successfully uploaded.',
-      };
-    } catch (error) {
-      // rollback: remove the orphan document (chunks cascade-delete)
-      await supabase.from('documents').delete().eq('id', docData.id);
-      throw error;
-    }
+    });
   } catch (error: unknown) {
     console.error('File Processing Error:', error);
     // if error occured before data insertion, remove the uploaded files
