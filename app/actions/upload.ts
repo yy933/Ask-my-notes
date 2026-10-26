@@ -4,6 +4,7 @@ import { ai } from '@/lib/gemini';
 import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
 import { supabase } from '@/lib/supabase';
+import { getFriendlyErrorMessage } from '@/lib/errorHandler';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const EMBEDDING_MODEL = 'gemini-embedding-001';
@@ -129,7 +130,7 @@ export async function processAndStoreDocument(
     }
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'File processing failed',
+      message: getFriendlyErrorMessage(error),
     };
   }
 }
