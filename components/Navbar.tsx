@@ -38,6 +38,17 @@ export function Navbar() {
             <NavigationMenuList className="gap-1">
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  href="/chat"
+                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                    pathname === '/upload' ? 'bg-accent text-accent-foreground font-semibold' : ''
+                  }`}
+                >
+                  <Bot className="text-primary h-4 w-4" />
+                  <span>Upload Files</span>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
                   href="/documents"
                   className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
                     pathname === '/documents'
@@ -46,7 +57,7 @@ export function Navbar() {
                   }`}
                 >
                   <FileText className="h-4 w-4" />
-                  <span>Documents</span>
+                  <span>Document List</span>
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
