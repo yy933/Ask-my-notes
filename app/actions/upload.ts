@@ -112,7 +112,7 @@ export async function processAndStoreDocument(
 
           // pause between each chunk
           if (i < chunks.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            await new Promise((resolve) => setTimeout(resolve, 3000));
           }
         }
         // 6. Insert all chunks into `document_chunks` table
@@ -127,6 +127,14 @@ export async function processAndStoreDocument(
         console.error('Background embedding failed:', bgError);
       }
     });
+
+    // response return to client (embedding and chunking in background after sending response)
+    return {
+      success: true,
+      documentId: docData.id,
+      chunkCount: 0,
+      message: 'Your file is successfully uploaded.',
+    };
   } catch (error: unknown) {
     console.error('File Processing Error:', error);
     // if error occured before data insertion, remove the uploaded files
