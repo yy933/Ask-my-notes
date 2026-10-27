@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState, useRef } from 'react';
 import { uploadDocument } from '@/app/actions/upload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,27 +9,40 @@ import { useRouter } from 'next/navigation';
 
 export default function FileUpload() {
   const [state, formAction, isPending] = useActionState(uploadDocument, null);
+  const [hasNewFileSelected, setHasNewFileSelected] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
+  const handleFileChange = () => {
+    setHasNewFileSelected(true);
+  };
   return (
     <Card className="mx-auto mt-8 w-full max-w-md">
       <CardHeader>
         <CardTitle>Only allow .txt or .pdf files (Max: 3MB).</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
+        <form
+          ref={formRef}
+          action={async (formData) => {
+            setHasNewFileSelected(false);
+            await formAction(formData);
+          }}
+          className="space-y-4"
+        >
           <input
             type="file"
             name="file"
             accept=".txt,.pdf"
             disabled={isPending}
-            className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-100"
+            onChange={handleFileChange}
+            className="block w-full cursor-pointer text-sm text-slate-500 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-100"
           />
-          <Button type="submit" disabled={isPending} className="w-full">
+          <Button type="submit" disabled={isPending} className="w-full cursor-pointer">
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                Uploading...
               </>
             ) : (
               'Upload your file'
@@ -37,7 +50,7 @@ export default function FileUpload() {
           </Button>
         </form>
         {/* response message from server */}
-        {state?.message && (
+        {state?.message && !hasNewFileSelected && (
           <div className="mt-4 space-y-3">
             <p
               className={`text-center text-sm font-medium ${

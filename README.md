@@ -29,7 +29,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Build the front-end file upload interface (supporting `.txt` and `.pdf`)
 - [x] Implement synchronous fast-upload Server Action:
   - [] Instant file ingestion into Supabase Storage & documents table (status marked as pending / unindexed)
-  - [] Bypass heavy blocking tasks on initial upload for instant user response
+  - [x] Bypass heavy blocking tasks on initial upload for instant user response
 - [x] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
 - [x] Decoupled Embedding & Chunking Workflow:
   - [x] Implement configurable larger text chunking logic (e.g., 2,000 characters / chunk with 200-character overlap to optimize Gemini Free Tier TPM limits)

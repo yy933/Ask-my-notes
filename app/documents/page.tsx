@@ -126,7 +126,9 @@ export default function DocumentsPage() {
             <FileText className="text-primary h-6 w-6" />
             Knowledge Base Files
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage your uploaded documents</p>
+          <p className="text-muted-foreground mt-1 text-center text-sm">
+            Manage your uploaded documents
+          </p>
         </div>
       </header>
 
@@ -173,7 +175,7 @@ export default function DocumentsPage() {
                       onClick={() => handlePreview(doc)}
                       aria-disabled={!doc.file_path || isPreviewLoading}
                       className={cn(
-                        buttonVariants({ variant: 'secondary', size: 'sm' }),
+                        buttonVariants({ variant: 'outline', size: 'sm' }),
                         'cursor-pointer',
                         (!doc.file_path || isPreviewLoading) && 'pointer-events-none opacity-50'
                       )}
@@ -194,7 +196,8 @@ export default function DocumentsPage() {
                       }
                       aria-disabled={!doc.file_path}
                       className={cn(
-                        buttonVariants({ variant: 'outline', size: 'sm' }),
+                        buttonVariants({ variant: 'default', size: 'sm' }),
+                        'cursor-pointer',
                         !doc.file_path && 'pointer-events-none opacity-50'
                       )}
                     >
