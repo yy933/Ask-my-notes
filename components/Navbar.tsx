@@ -38,7 +38,7 @@ export function Navbar() {
             <NavigationMenuList className="gap-1">
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  href="/chat"
+                  href="/upload"
                   className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
                     pathname === '/upload' ? 'bg-accent text-accent-foreground font-semibold' : ''
                   }`}

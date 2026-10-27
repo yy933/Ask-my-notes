@@ -39,7 +39,7 @@ export default function FileUpload() {
   return (
     <Card className="mx-auto mt-8 w-full max-w-md">
       <CardHeader>
-        <CardTitle>Upload File (Only allow .txt or .pdf files)</CardTitle>
+        <CardTitle>Only allow .txt or .pdf files (Max: 3MB).</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
