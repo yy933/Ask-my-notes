@@ -1,48 +1,23 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
-import { processAndStoreDocument } from '@/app/actions/upload';
+import { useActionState } from 'react';
+import { uploadDocument } from '@/app/actions/upload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-
-const UPLOAD_TIPS = [
-  '☕ Fun Fact: The AI is hard at work reading your file. Grab a cup of coffee and relax!',
-  '✨ Tip: Once uploaded, you can instantly ask questions about this document in the Chatbot page!',
-  '🔍 Tip: Both .txt and .pdf files are supported for precise vector search.',
-  '🤖 AI Whisper: "This document looks packed with some fascinating insights!"',
-];
+import { Loader2, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function FileUpload() {
-  const [state, formAction, isPending] = useActionState(processAndStoreDocument, null);
-  const [uploadStep, setUploadStep] = useState<string>('');
+  const [state, formAction, isPending] = useActionState(uploadDocument, null);
+  const router = useRouter();
 
-  useEffect(() => {
-    if (!isPending) {
-      return;
-    }
-    let index = 0;
-    const interval = setInterval(() => {
-      index = (index + 1) % UPLOAD_TIPS.length;
-      setUploadStep(UPLOAD_TIPS[index]);
-    }, 3500); // texts change every 3.5s
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isPending]);
-
-  const handleSubmit = (formData: FormData) => {
-    setUploadStep('Processing the data...');
-    formAction(formData);
-  };
   return (
     <Card className="mx-auto mt-8 w-full max-w-md">
       <CardHeader>
         <CardTitle>Only allow .txt or .pdf files (Max: 3MB).</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={handleSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
           <input
             type="file"
             name="file"
@@ -61,21 +36,28 @@ export default function FileUpload() {
             )}
           </Button>
         </form>
-        {isPending && (
-          <div className="bg-muted/50 mt-4 animate-pulse rounded-lg border p-3 text-center">
-            <p className="text-xs font-medium text-violet-600 dark:text-violet-400">
-              {uploadStep || 'Processing the file...'}
+        {/* response message from server */}
+        {state?.message && (
+          <div className="mt-4 space-y-3">
+            <p
+              className={`text-center text-sm font-medium ${
+                state.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'
+              }`}
+            >
+              {state.message}
             </p>
+
+            {/* Navigate to Documents List page after uploading files */}
+            {state.success && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push('/documents')}
+              >
+                Check out your files <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </div>
-        )}
-        {!isPending && state?.message && (
-          <p
-            className={`mt-4 text-center text-sm font-medium ${
-              state.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'
-            }`}
-          >
-            {state.message}
-          </p>
         )}
       </CardContent>
     </Card>

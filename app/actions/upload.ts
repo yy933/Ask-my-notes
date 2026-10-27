@@ -86,8 +86,7 @@ export async function uploadDocument(
     return {
       success: true,
       documentId: docData.id,
-      message:
-        'File uploaded successfully! You can now build its AI index from the documents list.',
+      message: 'File uploaded successfully!',
     };
   } catch (error) {
     console.error('Upload Error:', error);
