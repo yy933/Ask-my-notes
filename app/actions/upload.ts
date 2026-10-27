@@ -5,10 +5,115 @@ import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
 import { supabase } from '@/lib/supabase';
 import { getFriendlyErrorMessage } from '@/lib/errorHandler';
+import { revalidatePath } from 'next/cache';
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3 MB
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const STORAGE_BUCKET = 'documents';
+
+// 1. Upload files (insert records into documents table and bucket)
+export async function uploadDocument(
+  prevState: { success: boolean; message: string } | null,
+  formData: FormData
+) {
+   let uploadedStoragePath: string | null = null;
+   try{
+    const file = formData.get('file') as File;
+     if (!file || file.size === 0) {
+      return { success: false, message: 'No file provided.' };
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('File size exceeds the 3MB limit. Please upload a smaller file.');
+    }
+
+
+    // 1. Read file content based on its type (PDF or TXT) and extract raw text with parser
+    let rawText = '';
+    const arrayBuffer = await file.arrayBuffer();
+
+    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      const parser = new PDFParse({ data: new Uint8Array(arrayBuffer.slice(0)) });
+      try {
+        const result = await parser.getText();
+        rawText = result.text;
+      } finally {
+        await parser.destroy();
+      }
+    } else if (file.type.startsWith('text/plain') || file.name.endsWith('.txt')) {
+      rawText = Buffer.from(arrayBuffer).toString('utf-8');
+    } else {
+      throw new Error('Unsupported file format. Only .txt and .pdf files are supported.');
+    }
+
+    if (!rawText.trim()) throw new Error('File content is empty');
+
+     // 2. upload file to supabase bucket
+    const fileExt = file.name.split('.').pop();
+    const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(uniqueFileName, arrayBuffer.slice(0), {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (storageError || !storageData)
+      throw new Error(`Failed to create document record: ${storageError?.message}`);
+    uploadedStoragePath = storageData.path;
+
+    // get document public url
+    const { data: publicUrlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(uploadedStoragePath);
+    const publicUrl = publicUrlData.publicUrl;
+
+    // 3. write data into documents table
+    const { data: docData, error: docError } = await supabase
+      .from('documents')
+      .insert({
+        title: file.name,
+        file_path: publicUrl,
+        raw_text: rawText,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (docError || !docData)
+      throw new Error(`Failed to create document record: ${docError?.message}`);
+
+    revalidatePath('/documents');
+
+    return {
+      success: true,
+      documentId: docData.id,
+      message: 'File uploaded successfully! You can now build its AI index from the documents list.',
+    };
+   }catch(error){console.error('Upload Error:', error);
+    if (uploadedStoragePath) {
+      await supabase.storage.from(STORAGE_BUCKET).remove([uploadedStoragePath]);
+    }
+    return {
+      success: false,
+      message: getFriendlyErrorMessage(error),
+    };}
+
+
+  
+ 
+
+// 2. Chunking and embedding (read raw_text in documents table)
+
+
+
+
+
+
+
+
+
+
+
 
 export async function processAndStoreDocument(
   prevState: { success: boolean; message: string } | null,
