@@ -27,10 +27,14 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 ### Step 2: File Upload & Chunking Pipeline (Ingestion Engine)
 
 - [x] Build the front-end file upload interface (supporting `.txt` and `.pdf`)
-- [x] Implement Server Actions / API Routes to handle file ingestion
+- [x] Implement synchronous fast-upload Server Action:
+  - [] Instant file ingestion into Supabase Storage & documents table (status marked as pending / unindexed)
+  - [] Bypass heavy blocking tasks on initial upload for instant user response
 - [x] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
-- [x] Implement text chunking logic (e.g., 500 characters / chunk with 50-character overlap)
-- [x] Connect Google Gemini Embedding API (`text-embedding-004`) to generate embeddings for each chunk
+- [x] Decoupled Embedding & Chunking Workflow:
+  - [] Implement configurable larger text chunking logic (e.g., 2,000 characters / chunk with 200-character overlap to optimize Gemini Free Tier TPM limits)
+  - [] Connect Google Gemini Embedding API (gemini-embedding-001) with manual/explicit trigger mechanism rather than blocking auto-upload
+  - [] Add manual "Build AI Index" trigger button in the Document Management view to process embeddings safely on demand
 
 ### Step 3: Vector Storage & Hybrid Retrieval
 
@@ -54,6 +58,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Document Management & List View:
   - [x] Build Document List UI (display file name, uploaded time, processing status, etc.).
   - [x] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
+  - [] Add interactive "Build AI Index" action for unindexed documents.
 - [x] Source Citations & Preview Modal/Drawer:
   - [x] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
   - [x] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
@@ -68,7 +73,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [ ] Deploy production build to Vercel with environment variables
 - [ ] Perform End-to-End (E2E) integration testing:
   - [x] Validate file upload & embedding pipeline latency
-  - Verify semantic search accuracy and response streaming smoothness
+  - [] Verify semantic search accuracy and response streaming smoothness
 
 ### Step 7: Portfolio Packaging & Documentation
 
