@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2 } from 'lucide-react';
 
 interface DocumentToolbarProps {
   selectedCount: number;
@@ -32,6 +32,7 @@ export default function DocumentToolbar({
             type="checkbox"
             checked={isAllSelected && totalCount > 0}
             onChange={(e) => onSelectAll(e.target.checked)}
+            disabled={isBatchDeleting}
             className="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300"
           />
           <span>
@@ -47,8 +48,17 @@ export default function DocumentToolbar({
             disabled={isBatchDeleting}
             className="cursor-pointer"
           >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Delete Selected {selectedCount} files
+            {isBatchDeleting ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Delete Selected ({selectedCount})
+              </>
+            )}
           </Button>
         )}
       </div>
