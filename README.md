@@ -34,7 +34,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Decoupled Embedding & Chunking Workflow:
   - [x] Implement configurable larger text chunking logic (e.g., 2,000 characters / chunk with 200-character overlap to optimize Gemini Free Tier TPM limits)
   - [x] Connect Google Gemini Embedding API (gemini-embedding-001) with manual/explicit trigger mechanism rather than blocking auto-upload
-  - [] Add manual "Build AI Index" trigger button in the Document Management view to process embeddings safely on demand
+  - [x] Add manual "Build AI Index" trigger button in the Document Management view to process embeddings safely on demand
 
 ### Step 3: Vector Storage & Hybrid Retrieval
 
@@ -58,7 +58,8 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Document Management & List View:
   - [x] Build Document List UI (display file name, uploaded time, processing status, etc.).
   - [x] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
-  - [x] Add interactive "Build AI Index" action for unindexed documents.
+  - [x] Add interactive "Feed the Chatbot" action for unindexed documents.
+  - [ ] Implement Document List enhancements: Pagination, sorting options, and batch deletion.
 - [x] Source Citations & Preview Modal/Drawer:
   - [x] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
   - [x] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
@@ -66,16 +67,22 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
   - [] Implement Toast notifications (for upload success, file deletion, and error handling).
   - [] Add global loading states, error boundaries, and empty states for the document management view.
 
-### Step 6: Deployment, Testing & Security Guardrails
+### Step 6: User Authentication & Multi-Tenant Isolation (Upcoming)
 
-- [ ] Enable Row Level Security (RLS) for multi-tenant data isolation
+- [ ] Integrate Supabase Auth (Sign up, Login, Logout, Session management).
+- [ ] Link `user_id` to `documents` and `document_chunks` tables.
+- [ ] Implement Next.js Middleware to protect private routes (`/upload`, `/documents`).
+- [ ] Enable Row Level Security (RLS) for multi-tenant data isolation.
+
+### Step 7: Deployment, Testing & Security Guardrails
+
 - [ ] Implement basic guardrails (e.g., file size/type validation, API rate limiting)
 - [ ] Deploy production build to Vercel with environment variables
 - [ ] Perform End-to-End (E2E) integration testing:
   - [x] Validate file upload & embedding pipeline latency
   - [] Verify semantic search accuracy and response streaming smoothness
 
-### Step 7: Portfolio Packaging & Documentation
+### Step 8: Portfolio Packaging & Documentation
 
 - [x] Draw a concise **System Architecture Diagram** (Mermaid.js / Excalidraw)
 - [] Record a 30–45s product demo GIF / video walkthrough
