@@ -213,6 +213,18 @@ export default function DocumentsPage() {
     }
   };
 
+  // Sorting docs
+  const sortedDocuments = [...documents].sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    } else if (sortBy === 'oldest') {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    } else if (sortBy === 'title') {
+      return a.title.localeCompare(b.title);
+    }
+    return 0;
+  });
+
   return (
     <div className="bg-background mx-auto flex h-screen w-full max-w-4xl flex-col p-4">
       <header className="mb-6 flex items-center justify-center border-b py-4">
@@ -260,21 +272,23 @@ export default function DocumentsPage() {
         ) : (
           <>
             <div className="grid gap-3">
-              {documents.map((doc) => (
-                <DocumentCard
-                  key={doc.id}
-                  doc={doc}
-                  isSelected={selectedIds.includes(doc.id)}
-                  isBuilding={buildingIds[doc.id] || false}
-                  isPreviewLoading={isPreviewLoading}
-                  isDeleting={deletingId === doc.id}
-                  notice={notices[doc.id]}
-                  onSelectToggle={handleSelectToggle}
-                  onBuildIndex={handleBuilding}
-                  onPreview={handlePreview}
-                  onDelete={handleDelete}
-                />
-              ))}
+              {sortedDocuments.map((doc) => {
+                return (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    isSelected={selectedIds.includes(doc.id)}
+                    isBuilding={buildingIds[doc.id] || false}
+                    isPreviewLoading={isPreviewLoading}
+                    isDeleting={deletingId === doc.id}
+                    notice={notices[doc.id]}
+                    onSelectToggle={handleSelectToggle}
+                    onBuildIndex={handleBuilding}
+                    onPreview={handlePreview}
+                    onDelete={handleDelete}
+                  />
+                );
+              })}
             </div>
 
             <PreviewDialog
