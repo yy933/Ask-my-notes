@@ -254,15 +254,15 @@ export default function DocumentsPage() {
                           disabled={isBuildingThis}
                         >
                           {isBuildingThis ? (
-                            <>
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                              Feeding...
-                            </>
+                            <div className="flex items-center justify-center">
+                              <Loader2 className="h-4 w-4 animate-spin md:mr-1.5" />
+                              <span className="hidden md:inline">Feeding...</span>
+                            </div>
                           ) : (
-                            <>
-                              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                              Feed the chatbot
-                            </>
+                            <div className="flex items-center justify-center">
+                              <Sparkles className="h-4 w-4 md:mr-1.5" />
+                              <span className="hidden md:inline">Feed the chatbot</span>
+                            </div>
                           )}
                         </Button>
                       )}
@@ -271,16 +271,18 @@ export default function DocumentsPage() {
                         aria-disabled={!doc.file_path || isPreviewLoading}
                         className={cn(
                           buttonVariants({ variant: 'outline', size: 'sm' }),
-                          'cursor-pointer',
+                          'cursor-pointer md:px-3',
                           (!doc.file_path || isPreviewLoading) && 'pointer-events-none opacity-50'
                         )}
                       >
-                        {isPreviewLoading ? (
-                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Eye className="mr-1.5 h-4 w-4" />
-                        )}
-                        Preview
+                        <div className="flex items-center justify-center">
+                          {isPreviewLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin md:mr-1.5" />
+                          ) : (
+                            <Eye className="h-4 w-4 md:mr-1.5" />
+                          )}
+                          <span className="hidden md:inline">Preview</span>
+                        </div>
                       </a>
 
                       {/* Download btn */}
@@ -289,30 +291,34 @@ export default function DocumentsPage() {
                         aria-disabled={!doc.file_path}
                         className={cn(
                           buttonVariants({ variant: 'default', size: 'sm' }),
-                          'cursor-pointer',
+                          'cursor-pointer md:px-3',
                           !doc.file_path && 'pointer-events-none opacity-50'
                         )}
                       >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        Download
+                        <div className="flex items-center justify-center">
+                          <Download className="h-4 w-4 md:mr-1.5" />
+                          <span className="hidden md:inline">Download</span>
+                        </div>
                       </a>
 
                       {/* Delete btn */}
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="cursor-pointer"
+                        className="cursor-pointer md:px-3"
                         onClick={() => handleDelete(doc)}
                         disabled={deletingId === doc.id}
                       >
-                        {deletingId === doc.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Trash2 className="mr-1.5 h-4 w-4" />
-                            Delete
-                          </>
-                        )}
+                        <div className="flex items-center justify-center">
+                          {deletingId === doc.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Trash2 className="h-4 w-4 md:mr-1.5" />
+                              <span className="hidden md:inline">Delete</span>
+                            </>
+                          )}
+                        </div>
                       </Button>
                     </div>
                   </Card>
