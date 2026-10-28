@@ -41,6 +41,7 @@ export type DocumentItem = {
   created_at: string;
   file_path?: string;
   raw_text?: string | null;
+  status: 'pending' | 'completed' | 'failed';
 };
 
 export type PreviewDialogProps = {

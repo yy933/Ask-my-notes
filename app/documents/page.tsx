@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { buildDocumentIndex } from '../actions/upload';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import PreviewDialog from '@/components/preview-dialog';
-import { FileText, Trash2, Loader2, UploadCloud, Eye, Download } from 'lucide-react';
+import {
+  FileText,
+  Trash2,
+  Loader2,
+  UploadCloud,
+  Eye,
+  Download,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { DocumentItem, SourceItem } from '@/types';
 import { cn } from 'cn';
@@ -20,7 +31,12 @@ export default function DocumentsPage() {
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [buildingIds, setBuildingIds] = useState<Record<string, boolean>>({});
+  const [notices, setNotices] = useState<Record<string, { success?: boolean; message?: string }>>(
+    {}
+  );
 
+  // Preview
   const handlePreview = async (doc: DocumentItem) => {
     try {
       setIsPreviewLoading(true);
@@ -41,6 +57,32 @@ export default function DocumentsPage() {
     }
   };
 
+  // Building (Creating AI index)
+  const handleBuilding = async (doc: DocumentItem) => {
+    setBuildingIds((prev) => ({ ...prev, [doc.id]: true }));
+    setNotices((prev) => ({ ...prev, [doc.id]: {} }));
+    try {
+      const res = await buildDocumentIndex(doc.id);
+      setNotices((prev) => ({ ...prev, [doc.id]: res }));
+
+      if (res.success) {
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === doc.id ? { ...d, status: 'completed' } : d))
+        );
+      }
+    } catch {
+      setNotices((prev) => ({
+        ...prev,
+        [doc.id]: {
+          success: false,
+          message: 'Something went wrong while reading the file.',
+        },
+      }));
+    } finally {
+      setBuildingIds((prev) => ({ ...prev, [doc.id]: false }));
+    }
+  };
+
   // 1. Get all documents
   useEffect(() => {
     let isMounted = true; // prevent setState after unmount
@@ -58,6 +100,10 @@ export default function DocumentsPage() {
           const formattedData: DocumentItem[] = (data || []).map((doc) => ({
             ...doc,
             file_path: doc.file_path ?? undefined,
+            status:
+              doc.status === 'completed' || doc.status === 'failed' || doc.status === 'pending'
+                ? doc.status
+                : 'pending',
           }));
           setDocuments(formattedData);
         }
@@ -146,85 +192,132 @@ export default function DocumentsPage() {
               Upload your files to start building your knowledge base.
             </p>
             <Button className="mt-4" variant="outline">
-              <Link href="/">Go to Upload</Link>
+              <Link href="/upload">Go to Upload</Link>
             </Button>
           </div>
         ) : (
           <>
             <div className="grid gap-3">
-              {documents.map((doc) => (
-                <Card
-                  key={doc.id}
-                  className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="flex items-center gap-3 md:items-center">
-                    <div className="bg-primary/10 shrink-0 rounded-lg p-2.5">
-                      <FileText className="text-primary h-5 w-5" />
+              {documents.map((doc) => {
+                const isBuildingThis = buildingIds[doc.id] || false;
+                const notice = notices[doc.id];
+                return (
+                  <Card
+                    key={doc.id}
+                    className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="flex items-center gap-3 md:items-center">
+                      <div className="bg-primary/10 shrink-0 rounded-lg p-2.5">
+                        <FileText className="text-primary h-5 w-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-sm leading-none font-semibold">{doc.title}</h3>
+                        <p className="text-muted-foreground text-xs">
+                          Uploaded time: {new Date(doc.created_at).toLocaleString()}
+                        </p>
+                        {/* Document status */}
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          {doc.status === 'completed' ? (
+                            <span className="flex items-center text-xs font-medium text-green-600">
+                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Chatbot feeded!
+                            </span>
+                          ) : doc.status === 'failed' ? (
+                            <span className="text-destructive flex items-center text-xs font-medium">
+                              <AlertCircle className="mr-1 h-3.5 w-3.5" /> Feeding failed
+                            </span>
+                          ) : (
+                            <span className="flex items-center text-xs font-medium text-amber-600">
+                              <Sparkles className="mr-1 h-3.5 w-3.5" /> Ready to feed
+                            </span>
+                          )}
+                        </div>
+                        {/* Notice on creating index */}
+                        {notice?.message && (
+                          <p
+                            className={`text-xs font-medium ${notice.success ? 'text-green-600' : 'text-destructive'}`}
+                          >
+                            {notice.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm leading-none font-semibold">{doc.title}</h3>
-                      <p className="text-muted-foreground text-xs">
-                        Uploaded time: {new Date(doc.created_at).toLocaleString()}
-                      </p>
+
+                    {/* Button group: Preview, Download, Delete, Create AI index */}
+                    <div className="flex items-center justify-end gap-2 border-t pt-3 md:border-t-0 md:pt-0">
+                      {/*  Create AI Index button */}
+                      {doc.status !== 'completed' && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="cursor-pointer bg-violet-600 text-white hover:bg-violet-700"
+                          onClick={() => handleBuilding(doc)}
+                          disabled={isBuildingThis}
+                        >
+                          {isBuildingThis ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              Feeding...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                              Feed the chatbot
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <a
+                        onClick={() => handlePreview(doc)}
+                        aria-disabled={!doc.file_path || isPreviewLoading}
+                        className={cn(
+                          buttonVariants({ variant: 'outline', size: 'sm' }),
+                          'cursor-pointer',
+                          (!doc.file_path || isPreviewLoading) && 'pointer-events-none opacity-50'
+                        )}
+                      >
+                        {isPreviewLoading ? (
+                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Eye className="mr-1.5 h-4 w-4" />
+                        )}
+                        Preview
+                      </a>
+
+                      {/* Download btn */}
+                      <a
+                        onClick={() => doc.file_path && handleDownload(doc.file_path, doc.title)}
+                        aria-disabled={!doc.file_path}
+                        className={cn(
+                          buttonVariants({ variant: 'default', size: 'sm' }),
+                          'cursor-pointer',
+                          !doc.file_path && 'pointer-events-none opacity-50'
+                        )}
+                      >
+                        <Download className="mr-1.5 h-4 w-4" />
+                        Download
+                      </a>
+
+                      {/* Delete btn */}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={() => handleDelete(doc)}
+                        disabled={deletingId === doc.id}
+                      >
+                        {deletingId === doc.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Trash2 className="mr-1.5 h-4 w-4" />
+                            Delete
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  </div>
-
-                  {/* Button group: Preview, Download, Delete */}
-                  <div className="flex items-center justify-end gap-2 border-t pt-3 md:border-t-0 md:pt-0">
-                    <a
-                      onClick={() => handlePreview(doc)}
-                      aria-disabled={!doc.file_path || isPreviewLoading}
-                      className={cn(
-                        buttonVariants({ variant: 'outline', size: 'sm' }),
-                        'cursor-pointer',
-                        (!doc.file_path || isPreviewLoading) && 'pointer-events-none opacity-50'
-                      )}
-                    >
-                      {isPreviewLoading ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="mr-1.5 h-4 w-4" />
-                      )}
-                      Preview
-                    </a>
-
-                    {/* Download btn */}
-                    <a
-                      onClick={() =>
-                        selectedSource?.file_path &&
-                        handleDownload(selectedSource.file_path, selectedSource.title)
-                      }
-                      aria-disabled={!doc.file_path}
-                      className={cn(
-                        buttonVariants({ variant: 'default', size: 'sm' }),
-                        'cursor-pointer',
-                        !doc.file_path && 'pointer-events-none opacity-50'
-                      )}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Download
-                    </a>
-
-                    {/* Delete btn */}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="cursor-pointer"
-                      onClick={() => handleDelete(doc)}
-                      disabled={deletingId === doc.id}
-                    >
-                      {deletingId === doc.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Trash2 className="mr-1.5 h-4 w-4" />
-                          Delete
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
             {/* Content preview dialog */}
             <PreviewDialog
