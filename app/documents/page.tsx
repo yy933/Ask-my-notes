@@ -15,18 +15,23 @@ import { truncateContent } from '@/lib/truncateHelpers';
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // document card related states
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
-  const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [buildingIds, setBuildingIds] = useState<Record<string, boolean>>({});
   const [notices, setNotices] = useState<Record<string, { success?: boolean; message?: string }>>(
     {}
   );
   const router = useRouter();
+
+  // preview modal related states
+  const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // 1. Get all documents
   useEffect(() => {
@@ -115,7 +120,7 @@ export default function DocumentsPage() {
     }
   };
 
-  // 2. Sync-Deletion
+  // Single Deletion
   const handleDelete = async (doc: DocumentItem) => {
     if (!window.confirm(`Are you sure you want to delete ${doc.title}?`)) {
       return;
@@ -172,7 +177,7 @@ export default function DocumentsPage() {
     }
   };
 
-  // Batch delete
+  // Batch deletion
   const handleBatchDelete = async () => {
     if (selectedIds.length === 0) return;
     if (
@@ -213,7 +218,7 @@ export default function DocumentsPage() {
     }
   };
 
-  // Sorting docs
+  // Sorting documents
   const sortedDocuments = [...documents].sort((a, b) => {
     if (sortBy === 'newest') {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -224,6 +229,16 @@ export default function DocumentsPage() {
     }
     return 0;
   });
+
+  // pagination related variables
+  const pageSize = 5;
+  // 1. calculating total pages
+  const totalPages = Math.max(1, Math.ceil(sortedDocuments.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  // 2. calculating data range
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentDocuments = sortedDocuments.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="bg-background mx-auto flex h-screen w-full max-w-4xl flex-col p-4">
@@ -240,13 +255,16 @@ export default function DocumentsPage() {
       </header>
       <DocumentToolbar
         selectedCount={selectedIds.length}
-        totalCount={documents.length}
+        totalCount={sortedDocuments.length}
         onSelectAll={handleSelectAll}
-        isAllSelected={documents.length > 0 && selectedIds.length === documents.length}
+        isAllSelected={sortedDocuments.length > 0 && selectedIds.length === sortedDocuments.length}
         onBatchDelete={handleBatchDelete}
         isBatchDeleting={isBatchDeleting}
         sortBy={sortBy}
-        onSortChange={setSortBy}
+        onSortChange={(value) => {
+          setSortBy(value);
+          setCurrentPage(1);
+        }}
       />
 
       <div className="flex-1 overflow-y-auto">
@@ -272,7 +290,7 @@ export default function DocumentsPage() {
         ) : (
           <>
             <div className="grid gap-3">
-              {sortedDocuments.map((doc) => {
+              {currentDocuments.map((doc) => {
                 return (
                   <DocumentCard
                     key={doc.id}
@@ -289,6 +307,34 @@ export default function DocumentsPage() {
                   />
                 );
               })}
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
+              <span className="text-muted-foreground text-xs">
+                Showing page {safeCurrentPage} of {totalPages} (Total {sortedDocuments.length}{' '}
+                files)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  className="cursor-pointer"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  className="cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
             </div>
 
             <PreviewDialog
