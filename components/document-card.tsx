@@ -19,10 +19,12 @@ import { handleDownload } from '@/lib/fileDownload';
 
 interface DocumentCardProps {
   doc: DocumentItem;
+  isSelected: boolean;
   isBuilding: boolean;
   isPreviewLoading: boolean;
   isDeleting: boolean;
   notice?: { success?: boolean; message?: string };
+  onSelectToggle: (id: string) => void;
   onBuildIndex: (doc: DocumentItem) => void;
   onPreview: (doc: DocumentItem) => void;
   onDelete: (doc: DocumentItem) => void;
@@ -30,10 +32,12 @@ interface DocumentCardProps {
 
 export default function DocumentCard({
   doc,
+  isSelected,
   isBuilding,
   isPreviewLoading,
   isDeleting,
   notice,
+  onSelectToggle,
   onBuildIndex,
   onPreview,
   onDelete,
@@ -41,6 +45,12 @@ export default function DocumentCard({
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3 md:items-center">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelectToggle(doc.id)}
+          className="text-primary focus:ring-primary h-4 w-4 cursor-pointer rounded border-gray-300"
+        />
         <div className="bg-primary/10 shrink-0 rounded-lg p-2.5">
           <FileText className="text-primary h-5 w-5" />
         </div>

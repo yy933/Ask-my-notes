@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
 import { FileText, Loader2, UploadCloud } from 'lucide-react';
-import Link from 'next/link';
 import type { DocumentItem, SourceItem } from '@/types';
 import { truncateContent } from '@/lib/truncateHelpers';
 
@@ -16,6 +15,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -153,6 +153,22 @@ export default function DocumentsPage() {
     }
   };
 
+  // Select toggle
+  const handleSelectToggle = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // select all / un-select all
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(documents.map((d) => d.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
   return (
     <div className="bg-background mx-auto flex h-screen w-full max-w-4xl flex-col p-4">
       <header className="mb-6 flex items-center justify-center border-b py-4">
@@ -194,10 +210,12 @@ export default function DocumentsPage() {
                 <DocumentCard
                   key={doc.id}
                   doc={doc}
+                  isSelected={selectedIds.includes(doc.id)}
                   isBuilding={buildingIds[doc.id] || false}
                   isPreviewLoading={isPreviewLoading}
                   isDeleting={deletingId === doc.id}
                   notice={notices[doc.id]}
+                  onSelectToggle={handleSelectToggle}
                   onBuildIndex={handleBuilding}
                   onPreview={handlePreview}
                   onDelete={handleDelete}
