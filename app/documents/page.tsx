@@ -7,6 +7,7 @@ import { buildDocumentIndex } from '../actions/upload';
 import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
+import DocumentToolbar from '@/components/document-toolbar';
 import { FileText, Loader2, UploadCloud } from 'lucide-react';
 import type { DocumentItem, SourceItem } from '@/types';
 import { truncateContent } from '@/lib/truncateHelpers';
@@ -16,6 +17,8 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -169,6 +172,47 @@ export default function DocumentsPage() {
     }
   };
 
+  // Batch delete
+  const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (
+      !window.confirm(`Are you sure you want to delete ${selectedIds.length} selected documents?`)
+    ) {
+      return;
+    }
+
+    try {
+      setIsBatchDeleting(true);
+
+      // 1. Get selected docs（for deletion of files in Storage）
+      const selectedDocs = documents.filter((d) => selectedIds.includes(d.id));
+
+      for (const doc of selectedDocs) {
+        if (doc.file_path) {
+          const pathParts = doc.file_path.split('/');
+          const fileName = pathParts[pathParts.length - 1];
+          if (fileName) {
+            await supabase.storage.from('documents').remove([fileName]);
+          }
+        }
+      }
+
+      // 2. remove from documents table
+      const { error } = await supabase.from('documents').delete().in('id', selectedIds);
+      if (error) throw error;
+
+      // 3. update UI
+      setDocuments((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
+      setSelectedIds([]);
+      alert('Selected documents have been deleted successfully!');
+    } catch (error) {
+      console.error('Batch deletion failed:', error);
+      alert('Failed to delete selected documents. Please try again.');
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-background mx-auto flex h-screen w-full max-w-4xl flex-col p-4">
       <header className="mb-6 flex items-center justify-center border-b py-4">
@@ -182,6 +226,16 @@ export default function DocumentsPage() {
           </p>
         </div>
       </header>
+      <DocumentToolbar
+        selectedCount={selectedIds.length}
+        totalCount={documents.length}
+        onSelectAll={handleSelectAll}
+        isAllSelected={documents.length > 0 && selectedIds.length === documents.length}
+        onBatchDelete={handleBatchDelete}
+        isBatchDeleting={isBatchDeleting}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
