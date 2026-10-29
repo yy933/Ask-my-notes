@@ -91,7 +91,9 @@ export default function ChatPage() {
                           onSelectSource={handleSelectSource}
                         />
                       ) : (
-                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        <div data-testid="user-message" className="whitespace-pre-wrap">
+                          {msg.content}
+                        </div>
                       )
                     ) : (
                       <span className="text-muted-foreground flex items-center gap-2">

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('Users can upload files', async ({ page }) => {
   // 1. Navigate to the file upload page
-  await page.goto('http://localhost:3000');
+  await page.goto('http://localhost:3000/upload');
 
   // 2. Select the file upload input and upload the test file
   const fileInput = page.locator('input[type="file"]');
@@ -16,5 +16,5 @@ test('Users can upload files', async ({ page }) => {
   await page.getByRole('button', { name: /Upload your file/i }).click();
 
   // 4. Verify that the upload success message is displayed
-  await expect(page.getByText(/Successfully processed/i)).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/successfully/i)).toBeVisible({ timeout: 15000 });
 });

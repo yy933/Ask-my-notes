@@ -41,6 +41,7 @@ export function FormattedMessage({ content, sources = [], onSelectSource }: Form
                   <Badge
                     variant="secondary"
                     key={numIdx}
+                    data-testid="source-badge"
                     onClick={() => {
                       if (sourceData && onSelectSource) {
                         onSelectSource(sourceData);
