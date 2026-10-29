@@ -9,9 +9,9 @@ import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
 import DocumentToolbar from '@/components/document-toolbar';
 import { FileText, Loader2, UploadCloud } from 'lucide-react';
-import type { DocumentItem, SourceItem } from '@/types';
-import { truncateContent } from '@/lib/truncateHelpers';
+import type { DocumentItem } from '@/types';
 import { useDocumentSelection } from '@/hooks/useDocumentSelection';
+import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -26,14 +26,9 @@ export default function DocumentsPage() {
     {}
   );
 
-  // preview modal related states
-  const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-
   const router = useRouter();
 
-  // Custom hook
+  // Document selection custom hook
   const {
     selectedIds,
     setSelectedIds,
@@ -42,6 +37,16 @@ export default function DocumentsPage() {
     handleSelectAll,
     handleBatchDelete,
   } = useDocumentSelection(documents, setDocuments);
+
+  // Preview modal custom hook
+  const {
+    selectedSource,
+    isPreviewModalOpen,
+    setIsPreviewModalOpen,
+    isPreviewLoading,
+    handlePreview,
+    truncatedContent,
+  } = useDocumentPreview();
 
   // 1. Get all documents
   useEffect(() => {
@@ -82,27 +87,6 @@ export default function DocumentsPage() {
       isMounted = false;
     };
   }, []);
-
-  // Preview
-  const handlePreview = async (doc: DocumentItem) => {
-    try {
-      setIsPreviewLoading(true);
-
-      setSelectedSource({
-        id: doc.id,
-        title: doc.title,
-        content: doc.raw_text || 'No content available.',
-        file_path: doc.file_path,
-      });
-
-      setIsPreviewModalOpen(true);
-    } catch (error) {
-      alert('Failed to load preview.');
-      console.error('Failed to load preview: ', error);
-    } finally {
-      setIsPreviewLoading(false);
-    }
-  };
 
   // Building (Creating AI index)
   const handleBuilding = async (doc: DocumentItem) => {
@@ -294,7 +278,7 @@ export default function DocumentsPage() {
               isOpen={isPreviewModalOpen}
               onOpenChange={setIsPreviewModalOpen}
               title={selectedSource?.title ?? ''}
-              content={truncateContent(selectedSource?.content, 450)}
+              content={truncatedContent}
             />
           </>
         )}
