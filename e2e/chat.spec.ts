@@ -63,7 +63,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
     await expect(aiResponseBubble).toContainText('test.txt');
 
     // 7. Verify if Source Badge is rendered
-    const sourceBadge = aiResponseBubble.locator('span', { hasText: 'Source' });
+    const sourceBadge = aiResponseBubble.locator('[data-testid="source-badge"]');
     await expect(sourceBadge.first()).toBeVisible();
   });
 

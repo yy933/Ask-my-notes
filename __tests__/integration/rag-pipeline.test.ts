@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { processAndStoreDocument } from '@/app/actions/upload';
+import { uploadDocument } from '@/app/actions/upload';
 import { searchSimilarChunks } from '@/lib/retrieval';
 import { supabase } from '@/lib/supabase';
 
@@ -16,7 +16,7 @@ describe('RAG Pipeline Integration Test', () => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const uploadResult = await processAndStoreDocument(null, formData);
+    const uploadResult = await uploadDocument(null, formData);
 
     expect(uploadResult.success).toBe(true);
     expect(uploadResult.documentId).toBeDefined();

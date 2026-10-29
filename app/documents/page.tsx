@@ -1,20 +1,53 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { FileText, Trash2, Loader2, UploadCloud, Bot, Eye, Download } from 'lucide-react';
-import Link from 'next/link';
+import PreviewDialog from '@/components/preview-dialog';
+import DocumentCard from '@/components/document-card';
+import DocumentToolbar from '@/components/document-toolbar';
+import { FileText, Loader2, UploadCloud } from 'lucide-react';
 import type { DocumentItem } from '@/types';
-import { cn } from 'cn';
-import { buttonVariants } from '@/components/ui/button';
+import { useDocumentSelection } from '@/hooks/useDocumentSelection';
+import { useDocumentPreview } from '@/hooks/useDocumentPreview';
+import { useDocumentMutations } from '@/hooks/useDocumentMutations';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // document card related states
+  const [sortBy, setSortBy] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const router = useRouter();
+
+  // Document selection custom hook
+  const {
+    selectedIds,
+    setSelectedIds,
+    isBatchDeleting,
+    handleSelectToggle,
+    handleSelectAll,
+    handleBatchDelete,
+  } = useDocumentSelection(documents, setDocuments);
+
+  // Preview modal custom hook
+  const {
+    selectedSource,
+    isPreviewModalOpen,
+    setIsPreviewModalOpen,
+    isPreviewLoading,
+    handlePreview,
+    truncatedContent,
+  } = useDocumentPreview();
+
+  // Document mutation (handle single document logic) custom hook
+  const { deletingId, buildingIds, notices, handleBuilding, handleDelete } = useDocumentMutations(
+    setDocuments,
+    setSelectedIds
+  );
   // 1. Get all documents
   useEffect(() => {
     let isMounted = true; // prevent setState after unmount
@@ -32,6 +65,10 @@ export default function DocumentsPage() {
           const formattedData: DocumentItem[] = (data || []).map((doc) => ({
             ...doc,
             file_path: doc.file_path ?? undefined,
+            status:
+              doc.status === 'completed' || doc.status === 'failed' || doc.status === 'pending'
+                ? doc.status
+                : 'pending',
           }));
           setDocuments(formattedData);
         }
@@ -51,50 +88,55 @@ export default function DocumentsPage() {
     };
   }, []);
 
-  // 2. Sync-Deletion
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) {
-      return;
+  // Sorting documents
+  const sortedDocuments = [...documents].sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    } else if (sortBy === 'oldest') {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    } else if (sortBy === 'title') {
+      return a.title.localeCompare(b.title);
     }
+    return 0;
+  });
 
-    try {
-      setDeletingId(id);
+  // pagination related variables
+  const pageSize = 5;
+  // 1. calculating total pages
+  const totalPages = Math.max(1, Math.ceil(sortedDocuments.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
-      const { error: chunkError } = await supabase
-        .from('document_chunks')
-        .delete()
-        .eq('document_id', id);
-
-      if (chunkError) console.warn('Error in deleting chunks: ', chunkError);
-
-      const { error: docError } = await supabase.from('documents').delete().eq('id', id);
-
-      if (docError) throw docError;
-
-      // update UI state
-      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
-    } catch (error) {
-      console.error('Deletion failed:', error);
-      alert('Failed to delete the document. Please try again later.');
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  // 2. calculating data range
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentDocuments = sortedDocuments.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="bg-background mx-auto flex h-screen w-full max-w-4xl flex-col p-4">
-      {/* Title */}
       <header className="mb-6 flex items-center justify-center border-b py-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <FileText className="text-primary h-6 w-6" />
             Knowledge Base Files
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage your uploaded documents</p>
+          <p className="text-muted-foreground mt-1 text-center text-sm">
+            Manage your uploaded documents
+          </p>
         </div>
       </header>
+      <DocumentToolbar
+        selectedCount={selectedIds.length}
+        totalCount={sortedDocuments.length}
+        onSelectAll={handleSelectAll}
+        isAllSelected={sortedDocuments.length > 0 && selectedIds.length === sortedDocuments.length}
+        onBatchDelete={handleBatchDelete}
+        isBatchDeleting={isBatchDeleting}
+        sortBy={sortBy}
+        onSortChange={(value) => {
+          setSortBy(value);
+          setCurrentPage(1);
+        }}
+      />
 
-      {/* Document List Area */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -107,89 +149,71 @@ export default function DocumentsPage() {
             <p className="text-muted-foreground mt-1 text-xs">
               Upload your files to start building your knowledge base.
             </p>
-            <Button className="mt-4" variant="outline">
-              <Link href="/">Go to Upload</Link>
+            <Button
+              className="mt-4 cursor-pointer"
+              variant="outline"
+              onClick={() => router.push('/upload')}
+            >
+              Go to Upload
             </Button>
           </div>
         ) : (
-          <div className="grid gap-3">
-            {documents.map((doc) => (
-              <Card
-                key={doc.id}
-                className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-center gap-3 md:items-center">
-                  <div className="bg-primary/10 shrink-0 rounded-lg p-2.5">
-                    <FileText className="text-primary h-5 w-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm leading-none font-semibold">{doc.title}</h3>
-                    <p className="text-muted-foreground text-xs">
-                      Uploaded time: {new Date(doc.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+          <>
+            <div className="grid gap-3">
+              {currentDocuments.map((doc) => {
+                return (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    isSelected={selectedIds.includes(doc.id)}
+                    isBuilding={buildingIds[doc.id] || false}
+                    isPreviewLoading={isPreviewLoading}
+                    isDeleting={deletingId === doc.id}
+                    notice={notices[doc.id]}
+                    onSelectToggle={handleSelectToggle}
+                    onBuildIndex={handleBuilding}
+                    onPreview={handlePreview}
+                    onDelete={handleDelete}
+                  />
+                );
+              })}
+            </div>
 
-                {/* Button group: Preview, Download, Delete */}
-                <div className="flex items-center justify-end gap-2 border-t pt-3 md:border-t-0 md:pt-0">
-                  {/* Preview btn */}
-                  <a
-                    href={doc.file_path || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={!doc.file_path}
-                    className={cn(
-                      buttonVariants({ variant: 'secondary', size: 'sm' }),
-                      !doc.file_path && 'pointer-events-none opacity-50'
-                    )}
-                    onClick={(e) => {
-                      if (!doc.file_path) e.preventDefault();
-                    }}
-                  >
-                    <Eye className="mr-1.5 h-4 w-4" />
-                    Preview
-                  </a>
+            {/* Pagination */}
+            <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
+              <span className="text-muted-foreground text-xs">
+                Showing page {safeCurrentPage} of {totalPages} (Total {sortedDocuments.length}{' '}
+                files)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  className="cursor-pointer"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  className="cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
 
-                  {/* Download btn */}
-                  <a
-                    href={doc.file_path || '#'}
-                    download={doc.title}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={!doc.file_path}
-                    className={cn(
-                      buttonVariants({ variant: 'outline', size: 'sm' }),
-                      !doc.file_path && 'pointer-events-none opacity-50'
-                    )}
-                    onClick={(e) => {
-                      if (!doc.file_path) e.preventDefault();
-                    }}
-                  >
-                    <Download className="mr-1.5 h-4 w-4" />
-                    Download
-                  </a>
-
-                  {/* Delete btn */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="cursor-pointer"
-                    onClick={() => handleDelete(doc.id)}
-                    disabled={deletingId === doc.id}
-                  >
-                    {deletingId === doc.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Trash2 className="mr-1.5 h-4 w-4" />
-                        Delete
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+            <PreviewDialog
+              isOpen={isPreviewModalOpen}
+              onOpenChange={setIsPreviewModalOpen}
+              title={selectedSource?.title ?? ''}
+              content={truncatedContent}
+            />
+          </>
         )}
       </div>
     </div>

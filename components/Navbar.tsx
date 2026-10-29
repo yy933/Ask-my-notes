@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut } from 'lucide-react';
+import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, Upload } from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -38,6 +38,17 @@ export function Navbar() {
             <NavigationMenuList className="gap-1">
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  href="/upload"
+                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                    pathname === '/upload' ? 'bg-accent text-accent-foreground font-semibold' : ''
+                  }`}
+                >
+                  <Bot className="text-primary h-4 w-4" />
+                  <span>Upload Files</span>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
                   href="/documents"
                   className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
                     pathname === '/documents'
@@ -46,7 +57,7 @@ export function Navbar() {
                   }`}
                 >
                   <FileText className="h-4 w-4" />
-                  <span>Documents</span>
+                  <span>Document List</span>
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
@@ -99,6 +110,18 @@ export function Navbar() {
               {/* Main menu */}
               <div className="mt-6 flex flex-1 flex-col gap-1">
                 <a
+                  href="/upload"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === '/upload'
+                      ? 'bg-accent text-accent-foreground font-semibold'
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Upload className="text-primary h-4 w-4" />
+                  <span>Upload Files</span>
+                </a>
+                <a
                   href="/documents"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -108,7 +131,7 @@ export function Navbar() {
                   }`}
                 >
                   <FileText className="h-4 w-4" />
-                  <span>Documents</span>
+                  <span>Document List</span>
                 </a>
 
                 <a

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
+import { handleDownload } from '@/lib/fileDownload';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -15,6 +16,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+
+import PreviewDialog from '@/components/preview-dialog';
+import { truncateFileName, truncateContent } from '@/lib/truncateHelpers';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
 import type { SourceItem } from '@/types';
@@ -26,6 +30,7 @@ export default function ChatPage() {
 
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const handleSelectSource = (source: SourceItem) => {
     setSelectedSource(source);
@@ -35,7 +40,6 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
-  console.log(selectedSource);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
@@ -87,7 +91,9 @@ export default function ChatPage() {
                           onSelectSource={handleSelectSource}
                         />
                       ) : (
-                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        <div data-testid="user-message" className="whitespace-pre-wrap">
+                          {msg.content}
+                        </div>
                       )
                     ) : (
                       <span className="text-muted-foreground flex items-center gap-2">
@@ -152,18 +158,14 @@ export default function ChatPage() {
               <div className="bg-muted/50 mx-4 space-y-1 rounded-lg border p-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <FileText className="text-primary h-4 w-4 shrink-0" />
-                  <span>{selectedSource.title}</span>
+                  <span>{truncateFileName(selectedSource.title, 70)}</span>
                 </div>
-                <p className="text-muted-foreground pl-6 text-xs">
-                  Page: #{selectedSource.chunkIndex}
-                </p>
-                {/* 檔案預覽與下載按鈕群組 */}
+                {/* Preview and download btn group */}
                 {selectedSource.file_path && (
                   <div className="flex items-center gap-2 border-t pt-2">
                     <a
-                      href={selectedSource.file_path}
-                      target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => setIsPreviewModalOpen(true)}
                       className={cn(
                         buttonVariants({ variant: 'secondary', size: 'sm' }),
                         'flex-1 cursor-pointer'
@@ -174,10 +176,10 @@ export default function ChatPage() {
                     </a>
 
                     <a
-                      href={selectedSource.file_path}
-                      download={selectedSource.title}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() =>
+                        selectedSource?.file_path &&
+                        handleDownload(selectedSource.file_path, selectedSource.title)
+                      }
                       className={cn(
                         buttonVariants({ variant: 'outline', size: 'sm' }),
                         'flex-1 cursor-pointer'
@@ -196,13 +198,20 @@ export default function ChatPage() {
                   Original Excerpt Content
                 </h4>
                 <div className="bg-card text-foreground/90 rounded-lg border p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-2xs">
-                  {selectedSource.content}
+                  {truncateContent(selectedSource.content, 120)}
                 </div>
               </div>
             </div>
           )}
         </SheetContent>
       </Sheet>
+      {/* Content preview dialog */}
+      <PreviewDialog
+        isOpen={isPreviewModalOpen}
+        onOpenChange={setIsPreviewModalOpen}
+        title={selectedSource?.title ?? ''}
+        content={truncateContent(selectedSource?.content, 450)}
+      />
     </div>
   );
 }
