@@ -28,7 +28,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 - [x] Build the front-end file upload interface (supporting `.txt` and `.pdf`)
 - [x] Implement synchronous fast-upload Server Action:
-  - [] Instant file ingestion into Supabase Storage & documents table (status marked as pending / unindexed)
+  - [x] Instant file ingestion into Supabase Storage & documents table (status marked as pending / unindexed)
   - [x] Bypass heavy blocking tasks on initial upload for instant user response
 - [x] Integrate PDF/TXT parsing libraries (e.g., `pdf-parse`) to extract plain text
 - [x] Decoupled Embedding & Chunking Workflow:
@@ -59,7 +59,7 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
   - [x] Build Document List UI (display file name, uploaded time, processing status, etc.).
   - [x] Implement file deletion feature with sync-deletion support (deleting a document automatically removes its corresponding vector records/chunks and database entries simultaneously).
   - [x] Add interactive "Feed the Chatbot" action for unindexed documents.
-  - [ ] Implement Document List enhancements: Pagination, sorting options, and batch deletion.
+  - [x] Implement Document List enhancements: Pagination, sorting options, and batch deletion.
 - [x] Source Citations & Preview Modal/Drawer:
   - [x] Add "Source Citations" beneath Chatbot responses (referencing document titles and chunk/page indices).
   - [x] Implement interactive citations allowing users to click a source badge to open a Modal/Drawer and view the original chunk text.
