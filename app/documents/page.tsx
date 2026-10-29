@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { buildDocumentIndex } from '../actions/upload';
 import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
@@ -12,19 +11,15 @@ import { FileText, Loader2, UploadCloud } from 'lucide-react';
 import type { DocumentItem } from '@/types';
 import { useDocumentSelection } from '@/hooks/useDocumentSelection';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
+import { useDocumentMutations } from '@/hooks/useDocumentMutations';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // document card related states
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [buildingIds, setBuildingIds] = useState<Record<string, boolean>>({});
-  const [notices, setNotices] = useState<Record<string, { success?: boolean; message?: string }>>(
-    {}
-  );
 
   const router = useRouter();
 
@@ -48,6 +43,11 @@ export default function DocumentsPage() {
     truncatedContent,
   } = useDocumentPreview();
 
+  // Document mutation (handle single document logic) custom hook
+  const { deletingId, buildingIds, notices, handleBuilding, handleDelete } = useDocumentMutations(
+    setDocuments,
+    setSelectedIds
+  );
   // 1. Get all documents
   useEffect(() => {
     let isMounted = true; // prevent setState after unmount
@@ -87,73 +87,6 @@ export default function DocumentsPage() {
       isMounted = false;
     };
   }, []);
-
-  // Building (Creating AI index)
-  const handleBuilding = async (doc: DocumentItem) => {
-    setBuildingIds((prev) => ({ ...prev, [doc.id]: true }));
-    setNotices((prev) => ({ ...prev, [doc.id]: {} }));
-    try {
-      const res = await buildDocumentIndex(doc.id);
-      setNotices((prev) => ({ ...prev, [doc.id]: res }));
-
-      if (res.success) {
-        setDocuments((prev) =>
-          prev.map((d) => (d.id === doc.id ? { ...d, status: 'completed' } : d))
-        );
-      }
-    } catch {
-      setNotices((prev) => ({
-        ...prev,
-        [doc.id]: {
-          success: false,
-          message: 'Something went wrong while reading the file.',
-        },
-      }));
-    } finally {
-      setBuildingIds((prev) => ({ ...prev, [doc.id]: false }));
-    }
-  };
-
-  // Single Deletion
-  const handleDelete = async (doc: DocumentItem) => {
-    if (!window.confirm(`Are you sure you want to delete ${doc.title}?`)) {
-      return;
-    }
-
-    try {
-      setDeletingId(doc.id);
-
-      // 1. if file path exists, delete files from Supabase Storage
-      if (doc.file_path) {
-        const pathParts = doc.file_path.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-
-        if (fileName) {
-          const { error: storageError } = await supabase.storage
-            .from('documents')
-            .remove([fileName]);
-
-          if (storageError) {
-            console.warn('Error deleting file from storage:', storageError.message);
-          }
-        }
-      }
-
-      // 2. delete record from documents table
-      const { error: docError } = await supabase.from('documents').delete().eq('id', doc.id);
-
-      if (docError) throw docError;
-
-      // 3. update UI state
-      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      alert(`File ${doc.title} has been deleted!`);
-    } catch (error) {
-      console.error('Deletion failed:', error);
-      alert('Failed to delete the document. Please try again later.');
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   // Sorting documents
   const sortedDocuments = [...documents].sort((a, b) => {
