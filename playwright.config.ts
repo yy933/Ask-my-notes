@@ -46,10 +46,6 @@ export default defineConfig({
       dependencies: ['setup'], // Ensure tests executed after setup
     },
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
@@ -57,7 +53,6 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
-
     {
       name: 'webkit',
       use: {
