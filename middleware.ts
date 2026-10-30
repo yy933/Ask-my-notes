@@ -7,9 +7,9 @@ export async function middleware(request: NextRequest) {
   });
 
   // bypass auth in test runtime at this stage (temporarily)
-  if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
-    return supabaseResponse;
-  }
+  // if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true') {
+  //   return supabaseResponse;
+  // }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

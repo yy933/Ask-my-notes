@@ -99,8 +99,8 @@ graph TD
 
 - [x] Configure Supabase SSR Client (`@supabase/ssr`) for cookies handling.
 - [x] Implement Auth Middleware to protect private routes (`/documents`, `/chat`, `/upload`).
-- [] Create Login and Register pages.
-  (Bypass auth at this stage to pass e2e tests.)
+- [x] Create Login and Register pages.
+      (Bypass auth at this stage to pass e2e tests.)
 
 #### 2. Row Level Security (RLS) & Data Isolation
 
