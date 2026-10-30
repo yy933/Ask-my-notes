@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 test.describe('RAG Chatbot E2E Flow', () => {
   let testDocumentId: string;

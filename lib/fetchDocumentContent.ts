@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 export async function fetchFullDocumentContent(documentId: string): Promise<string> {
   const { data: chunks, error } = await supabase

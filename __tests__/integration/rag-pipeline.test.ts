@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { uploadDocument } from '@/app/actions/upload';
 import { searchSimilarChunks } from '@/lib/retrieval';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 describe('RAG Pipeline Integration Test', () => {
   let createdDocumentId: string | undefined;
