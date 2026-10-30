@@ -74,6 +74,45 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [ ] Implement Next.js Middleware to protect private routes (`/upload`, `/documents`).
 - [ ] Enable Row Level Security (RLS) for multi-tenant data isolation.
 
+#### 🔐 Multi-Tenant Implementation Blueprint
+
+```mermaid
+graph TD
+    subgraph Phase 1: Auth Foundations
+        A1[Set up Supabase SSR Client] --> A2[Implement Auth Middleware & Route Protection]
+        A2 --> A3[Build Login / Register Pages]
+    end
+
+    subgraph Phase 2: Database & Storage RLS
+        A3 --> B1[Add user_id foreign key to documents & chunks]
+        B1 --> B2[Enable Row Level Security: auth.uid = user_id]
+        B2 --> B3[Configure Private Supabase Storage Bucket Policies]
+    end
+
+    subgraph Phase 3: Business Logic & API Integration
+        B3 --> C1[Inject user_id into Upload & Index Building Actions]
+        C1 --> C2[Pass user_id filter into Vector Similarity Search RPC]
+    end
+```
+
+#### 1. Auth Foundations
+
+- [x] Configure Supabase SSR Client (`@supabase/ssr`) for cookies handling.
+- [x] Implement Auth Middleware to protect private routes (`/documents`, `/chat`, `/upload`).
+- [] Create Login and Register pages.
+  (Bypass auth at this stage to pass e2e tests.)
+
+#### 2. Row Level Security (RLS) & Data Isolation
+
+- [] Add `user_id` foreign key columns to `documents` and `document_chunks` tables.
+- [] Enable RLS policies (`auth.uid() = user_id`) on Postgres tables.
+- [] Secure Supabase Storage Bucket access rules.
+
+#### 3. Business Logic & API Integration
+
+- [] Bind `user_id` during document uploads and AI index building.
+- [] Pass user context into vector retrieval pipelines for secure multi-tenant filtering.
+
 ### Step 7: Deployment, Testing & Security Guardrails
 
 - [ ] Implement basic guardrails (e.g., file size/type validation, API rate limiting)

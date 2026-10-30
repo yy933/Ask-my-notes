@@ -50,3 +50,16 @@ export type PreviewDialogProps = {
   title: string;
   content: string;
 };
+
+// auth related props
+export interface AuthFormCardProps {
+  title: string;
+  subtitle: string;
+  action: (formData: FormData) => void;
+  isPending: boolean;
+  state: { success?: boolean; message?: string } | null;
+  submitText: string;
+  footerText: string;
+  footerLinkText: string;
+  footerLinkHref: string;
+}

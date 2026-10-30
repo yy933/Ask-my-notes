@@ -3,7 +3,7 @@
 import { ai } from '@/lib/gemini';
 import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { getFriendlyErrorMessage } from '@/lib/errorHandler';
 import { revalidatePath } from 'next/cache';
 

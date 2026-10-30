@@ -1,5 +1,5 @@
 import { ai } from '@/lib/gemini';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { ChunkSearchResult } from '@/types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';

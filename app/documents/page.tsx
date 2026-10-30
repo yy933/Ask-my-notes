@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
