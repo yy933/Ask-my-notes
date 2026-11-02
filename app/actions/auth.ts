@@ -48,3 +48,9 @@ export async function registerAction(prevState: unknown, formData: FormData) {
     message: 'Registration successful! Please check your email for confirmation or log in.',
   };
 }
+
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/login');
+}

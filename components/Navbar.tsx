@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { startTransition, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, Upload } from 'lucide-react';
@@ -12,6 +12,7 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { signOutAction } from '@/app/actions/auth';
 import { cn } from 'cn';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ModeToggle } from '@/components/ModeToggle';
@@ -19,6 +20,7 @@ import { ModeToggle } from '@/components/ModeToggle';
 export function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -84,9 +86,10 @@ export function Navbar() {
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground cursor-pointer gap-2"
+            onClick={() => startTransition(() => signOutAction())}
           >
             <LogOut className="h-4 w-4" />
-            <span>Logout</span>
+            <span>{isPending ? 'Logging out...' : 'Logout'}</span>
           </Button>
         </div>
 
@@ -158,7 +161,7 @@ export function Navbar() {
                 <Button
                   variant="outline"
                   className="text-destructive hover:bg-destructive/10 w-full cursor-pointer justify-start gap-3"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => startTransition(() => signOutAction())}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
