@@ -6,6 +6,7 @@ const supabaseAdmin = createSupabaseClient(
 );
 
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
+const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'password123';
 
 test.describe('RAG Chatbot E2E Flow', () => {
   let testDocumentId: string;
@@ -15,11 +16,26 @@ test.describe('RAG Chatbot E2E Flow', () => {
   test.beforeAll(async () => {
     // 1. Get user id by email through Service Role
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    const testUser = userData?.users.find((u) => u.email === TEST_USER_EMAIL);
+    let testUser = userData?.users.find((u) => u.email === TEST_USER_EMAIL);
 
     if (userError || !testUser) {
       throw new Error(`Failed to fetch test user ID for email: ${TEST_USER_EMAIL}`);
     }
+
+    // if test user doesn't exist, create one
+    if (!testUser) {
+      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: TEST_USER_EMAIL,
+        password: TEST_USER_PASSWORD,
+        email_confirm: true, // confirm email automatically
+      });
+
+      if (createError || !createData.user) {
+        throw new Error(`Failed to create test user: ${createError?.message}`);
+      }
+      testUser = createData.user;
+    }
+
     testUserId = testUser.id;
 
     // 2. Create document table for testing
