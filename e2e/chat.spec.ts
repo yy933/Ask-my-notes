@@ -1,18 +1,37 @@
 import { test, expect } from '@playwright/test';
-import { createClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
 
 test.describe('RAG Chatbot E2E Flow', () => {
   let testDocumentId: string;
-  const supabase = createClient();
+  let testUserId: string;
 
   // Create chunk for testing
   test.beforeAll(async () => {
-    // Create document table for testing
-    const { data: docData, error: docError } = await supabase
+    // 1. Get user id by email through Service Role
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    const testUser = userData?.users.find((u) => u.email === TEST_USER_EMAIL);
+
+    if (userError || !testUser) {
+      throw new Error(`Failed to fetch test user ID for email: ${TEST_USER_EMAIL}`);
+    }
+    testUserId = testUser.id;
+
+    // 2. Create document table for testing
+    const { data: docData, error: docError } = await supabaseAdmin
       .from('documents')
       .insert({
+        user_id: testUserId,
         title: 'E2E Test Document',
         file_path: 'e2e-test-file.txt',
+        raw_text:
+          'This is a test content for chunking in E2E cloud test. The file name is test.txt.',
+        status: 'completed',
       })
       .select()
       .single();
@@ -20,9 +39,11 @@ test.describe('RAG Chatbot E2E Flow', () => {
     if (docError) throw docError;
     testDocumentId = docData.id;
 
-    const { error: chunkError } = await supabase
+    // 3. Create chunks
+    const { error: chunkError } = await supabaseAdmin
       .from('document_chunks')
       .insert({
+        user_id: testUserId,
         document_id: testDocumentId,
         content:
           'This is a test content for chunking in E2E cloud test. The file name is test.txt.',
@@ -71,7 +92,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
   // Clean up data after testing done
   test.afterAll(async () => {
     if (testDocumentId) {
-      await supabase.from('documents').delete().eq('id', testDocumentId);
+      await supabaseAdmin.from('documents').delete().eq('id', testDocumentId);
     }
   });
 });
