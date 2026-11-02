@@ -103,9 +103,9 @@ graph TD
 
 #### 2. Row Level Security (RLS) & Data Isolation
 
-- [] Add `user_id` foreign key columns to `documents` and `document_chunks` tables.
-- [] Enable RLS policies (`auth.uid() = user_id`) on Postgres tables.
-- [] Secure Supabase Storage Bucket access rules.
+- [x] Add `user_id` foreign key columns to `documents` and `document_chunks` tables.
+- [x] Enable RLS policies (`auth.uid() = user_id`) on Postgres tables.
+- [x] Secure Supabase Storage Bucket access rules.
 
 #### 3. Business Logic & API Integration
 
