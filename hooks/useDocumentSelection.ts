@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { DocumentItem } from '@/types';
 
 export function useDocumentSelection(
   documents: DocumentItem[],
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
 ) {
+  const supabase = createClient();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 

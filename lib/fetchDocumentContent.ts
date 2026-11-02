@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 export async function fetchFullDocumentContent(documentId: string): Promise<string> {
+  const supabase = createClient();
   const { data: chunks, error } = await supabase
     .from('document_chunks')
     .select('content')

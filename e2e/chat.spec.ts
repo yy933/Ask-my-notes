@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 test.describe('RAG Chatbot E2E Flow', () => {
   let testDocumentId: string;
+  const supabase = createClient();
 
   // Create chunk for testing
   test.beforeAll(async () => {
