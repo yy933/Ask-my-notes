@@ -1,5 +1,5 @@
 import { ai } from '@/lib/gemini';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from './supabase/server';
 import { ChunkSearchResult } from '@/types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
@@ -9,6 +9,14 @@ export async function searchSimilarChunks(
   matchCount: number = 5,
   threshold: number = 0.3
 ): Promise<ChunkSearchResult[]> {
+  // get current user
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
   // Edge case 1: Handle empty query
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return [];
@@ -33,6 +41,7 @@ export async function searchSimilarChunks(
     query_embedding: JSON.stringify(queryEmbedding),
     match_count: matchCount,
     match_threshold: threshold,
+    filter_user_id: user.id,
   });
   if (error) {
     console.error('Vector Search Error:', error);
