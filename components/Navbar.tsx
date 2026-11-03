@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useUser } from '@/hooks/useUser';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/providers/AuthProvider';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, LogIn, Upload } from 'lucide-react';
@@ -13,16 +15,17 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { signOutAction } from '@/app/actions/auth';
 import { cn } from 'cn';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ModeToggle } from '@/components/ModeToggle';
 
 export function Navbar() {
+  const supabase = createClient();
+  const router = useRouter();
+  const { user, userName, loading } = useAuth();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { user, userName, loading } = useUser();
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -94,7 +97,11 @@ export function Navbar() {
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-foreground cursor-pointer gap-2"
-                    onClick={() => startTransition(() => signOutAction())}
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      router.refresh();
+                      router.push('/login');
+                    }}
                   >
                     <LogOut className="h-4 w-4" />
                     <span>{isPending ? 'Logging out...' : 'Logout'}</span>
@@ -187,9 +194,10 @@ export function Navbar() {
                     <Button
                       variant="outline"
                       className="text-destructive hover:bg-destructive/10 w-full cursor-pointer justify-start gap-3"
-                      onClick={() => {
-                        setIsOpen(false);
-                        startTransition(() => signOutAction());
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        router.refresh();
+                        router.push('/login');
                       }}
                     >
                       <LogOut className="h-4 w-4" />

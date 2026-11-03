@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 export async function loginAction(prevState: unknown, formData: FormData) {
@@ -22,7 +23,11 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     return { success: false, message: error.message };
   }
 
-  redirect('/documents');
+  revalidatePath('/', 'layout');
+  return {
+    success: true,
+    message: 'Login successful!',
+  };
 }
 
 export async function registerAction(prevState: unknown, formData: FormData) {
@@ -52,5 +57,6 @@ export async function registerAction(prevState: unknown, formData: FormData) {
 export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  revalidatePath('/', 'layout');
   redirect('/login');
 }

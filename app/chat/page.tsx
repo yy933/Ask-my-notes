@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/providers/AuthProvider';
 import { handleDownload } from '@/lib/fileDownload';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +25,7 @@ import { cn } from 'cn';
 import type { SourceItem } from '@/types';
 
 export default function ChatPage() {
-  const { userName } = useUser();
+  const { userName } = useAuth();
   const { messages, input, setInput, formAction, isPending } = useChat();
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
