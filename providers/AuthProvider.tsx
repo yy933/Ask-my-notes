@@ -6,6 +6,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
+  userId: string | null;
   userName: string;
   loading: boolean;
   refreshUser: () => Promise<void>;
@@ -45,16 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase]);
 
+  const userId = user?.id ?? null;
   const userName =
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email?.split('@')[0] ||
     'User';
 
-  console.log('Loading: ', loading);
-
   return (
-    <AuthContext.Provider value={{ user, userName, loading, refreshUser }}>
+    <AuthContext.Provider value={{ user, userId, userName, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,5 @@
 'use server';
-
+import { createClient } from '@/lib/supabase/server';
 import { ai } from '@/lib/gemini';
 import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
@@ -16,6 +16,16 @@ export async function uploadDocument(
   prevState: { success: boolean; message: string } | null,
   formData: FormData
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, message: 'Unauthorized. Please log in.' };
+  }
+  const userId = user.id;
+
   let uploadedStoragePath: string | null = null;
   try {
     const file = formData.get('file') as File;
@@ -48,7 +58,7 @@ export async function uploadDocument(
 
     // 2. upload file to supabase bucket
     const fileExt = file.name.split('.').pop();
-    const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const uniqueFileName = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const { data: storageData, error: storageError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(uniqueFileName, arrayBuffer.slice(0), {
@@ -70,6 +80,7 @@ export async function uploadDocument(
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
+        user_id: userId,
         title: file.name,
         file_path: publicUrl,
         raw_text: rawText,
