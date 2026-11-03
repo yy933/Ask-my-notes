@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useState, useTransition } from 'react';
+import { useUser } from '@/hooks/useUser';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, LogIn, Upload } from 'lucide-react';
@@ -23,39 +22,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    // get current user
-    async function getUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    }
-    getUser();
-
-    // listen to auth status
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const userName =
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split('@')[0] ||
-    'User';
+  const { user, userName, loading } = useUser();
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
