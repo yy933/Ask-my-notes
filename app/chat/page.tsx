@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
+import { createClient } from '@/lib/supabase/client';
 import { handleDownload } from '@/lib/fileDownload';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,15 +23,45 @@ import { truncateFileName, truncateContent } from '@/lib/truncateHelpers';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from 'cn';
 import type { SourceItem } from '@/types';
+import type { User as UserType } from '@supabase/supabase-js';
 
 export default function ChatPage() {
+  const supabase = createClient();
   const { messages, input, setInput, formAction, isPending } = useChat();
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const [user, setUser] = useState<UserType | null>(null);
+
   const [selectedSource, setSelectedSource] = useState<SourceItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    fetchUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const userName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'User';
 
   const handleSelectSource = (source: SourceItem) => {
     setSelectedSource(source);
@@ -59,7 +90,7 @@ export default function ChatPage() {
           <div className="space-y-4 pb-4">
             {messages.length === 0 && (
               <div className="text-muted-foreground py-20 text-center">
-                <p>Hi there! How can I help you today?</p>
+                <p>Hi {userName}! How can I help you today?</p>
               </div>
             )}
 

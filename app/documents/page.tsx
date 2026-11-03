@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
@@ -16,6 +16,7 @@ import { useDocumentMutations } from '@/hooks/useDocumentMutations';
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
 
   // document card related states
   const [sortBy, setSortBy] = useState('newest');
