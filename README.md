@@ -109,8 +109,8 @@ graph TD
 
 #### 3. Business Logic & API Integration
 
-- [] Bind `user_id` during document uploads and AI index building.
-- [] Pass user context into vector retrieval pipelines for secure multi-tenant filtering.
+- [x] Bind `user_id` during document uploads and AI index building.
+- [x] Pass user context into vector retrieval pipelines for secure multi-tenant filtering.
 
 ### Step 7: Deployment, Testing & Security Guardrails
 
