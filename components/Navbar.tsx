@@ -1,9 +1,11 @@
 'use client';
 
-import { startTransition, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, Upload } from 'lucide-react';
+import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, LogIn, Upload } from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -21,6 +23,39 @@ export function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    // get current user
+    async function getUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    }
+    getUser();
+
+    // listen to auth status
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const userName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'User';
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -35,62 +70,83 @@ export function Navbar() {
 
         {/* Desktop Navigation (for desktop) */}
         <div className="hidden items-center gap-2 md:flex">
-          {/* main menu */}
-          <NavigationMenu>
-            <NavigationMenuList className="gap-1">
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/upload"
-                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                    pathname === '/upload' ? 'bg-accent text-accent-foreground font-semibold' : ''
-                  }`}
-                >
-                  <Bot className="text-primary h-4 w-4" />
-                  <span>Upload Files</span>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/documents"
-                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                    pathname === '/documents'
-                      ? 'bg-accent text-accent-foreground font-semibold'
-                      : ''
-                  }`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Document List</span>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+          {!loading && (
+            <>
+              {user ? (
+                <>
+                  {/* Login: show nav menu */}
+                  <NavigationMenu>
+                    <NavigationMenuList className="gap-1">
+                      <NavigationMenuItem>
+                        <NavigationMenuLink
+                          href="/upload"
+                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                            pathname === '/upload'
+                              ? 'bg-accent text-accent-foreground font-semibold'
+                              : ''
+                          }`}
+                        >
+                          <Upload className="text-primary h-4 w-4" />
+                          <span>Upload Files</span>
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
+                      <NavigationMenuItem>
+                        <NavigationMenuLink
+                          href="/documents"
+                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                            pathname === '/documents'
+                              ? 'bg-accent text-accent-foreground font-semibold'
+                              : ''
+                          }`}
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span>Document List</span>
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/chat"
-                  className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                    pathname === '/chat' ? 'bg-accent text-accent-foreground font-semibold' : ''
-                  }`}
-                >
-                  <Bot className="text-primary h-4 w-4" />
-                  <span>Ask Chatbot</span>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+                      <NavigationMenuItem>
+                        <NavigationMenuLink
+                          href="/chat"
+                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
+                            pathname === '/chat'
+                              ? 'bg-accent text-accent-foreground font-semibold'
+                              : ''
+                          }`}
+                        >
+                          <Bot className="text-primary h-4 w-4" />
+                          <span>Ask Chatbot</span>
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
+                    </NavigationMenuList>
+                  </NavigationMenu>
 
-          {/*  Section separator (Theme & Logout) */}
-          <div className="bg-border mx-1 h-5 w-[1px]" />
+                  <div className="bg-border mx-1 h-5 w-[1px]" />
+                  <ModeToggle />
 
-          <ModeToggle />
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground cursor-pointer gap-2"
-            onClick={() => startTransition(() => signOutAction())}
-          >
-            <LogOut className="h-4 w-4" />
-            <span>{isPending ? 'Logging out...' : 'Logout'}</span>
-          </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground cursor-pointer gap-2"
+                    onClick={() => startTransition(() => signOutAction())}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{isPending ? 'Logging out...' : 'Logout'}</span>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* Not login：Only show Login btn */}
+                  <ModeToggle />
+                  <Link href="/login">
+                    <Button size="sm" className="cursor-pointer gap-2">
+                      <LogIn className="h-4 w-4" />
+                      <span>Login</span>
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Menu (for mobile) */}
@@ -106,67 +162,94 @@ export function Navbar() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-left">
                   <CircleUser className="text-primary h-5 w-5" />
-                  User Name
+                  {/* User name */}
+                  {user ? userName : 'Guest'}
                 </SheetTitle>
               </SheetHeader>
 
-              {/* Main menu */}
-              <div className="mt-6 flex flex-1 flex-col gap-1">
-                <a
-                  href="/upload"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    pathname === '/upload'
-                      ? 'bg-accent text-accent-foreground font-semibold'
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Upload className="text-primary h-4 w-4" />
-                  <span>Upload Files</span>
-                </a>
-                <a
-                  href="/documents"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    pathname === '/documents'
-                      ? 'bg-accent text-accent-foreground font-semibold'
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Document List</span>
-                </a>
+              {user ? (
+                <>
+                  {/* Login: Main menu */}
+                  <div className="mt-6 flex flex-1 flex-col gap-1">
+                    <Link
+                      href="/upload"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                        pathname === '/upload'
+                          ? 'bg-accent text-accent-foreground font-semibold'
+                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Upload className="text-primary h-4 w-4" />
+                      <span>Upload Files</span>
+                    </Link>
+                    <Link
+                      href="/documents"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                        pathname === '/documents'
+                          ? 'bg-accent text-accent-foreground font-semibold'
+                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Document List</span>
+                    </Link>
 
-                <a
-                  href="/chat"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    pathname === '/chat'
-                      ? 'bg-accent text-accent-foreground font-semibold'
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Bot className="text-primary h-4 w-4" />
-                  <span>Ask Chatbot</span>
-                </a>
-              </div>
+                    <Link
+                      href="/chat"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                        pathname === '/chat'
+                          ? 'bg-accent text-accent-foreground font-semibold'
+                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Bot className="text-primary h-4 w-4" />
+                      <span>Ask Chatbot</span>
+                    </Link>
+                  </div>
 
-              {/* Tools */}
-              <div className="flex flex-col gap-2 border-t pt-4">
-                <div className="flex items-center justify-between px-3 py-1">
-                  <span className="text-muted-foreground text-xs font-medium">Theme Mode</span>
-                  <ModeToggle />
+                  {/* Tools */}
+                  <div className="flex flex-col gap-2 border-t pt-4">
+                    <div className="flex items-center justify-between px-3 py-1">
+                      <span className="text-muted-foreground text-xs font-medium">Theme Mode</span>
+                      <ModeToggle />
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="text-destructive hover:bg-destructive/10 w-full cursor-pointer justify-start gap-3"
+                      onClick={() => {
+                        setIsOpen(false);
+                        startTransition(() => signOutAction());
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* Not login */
+                <div className="mt-6 flex flex-1 flex-col justify-between">
+                  <div className="flex flex-col gap-2">
+                    <Link href="/login" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full justify-start gap-3">
+                        <LogIn className="h-4 w-4" />
+                        <span>Login</span>
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <div className="flex flex-col gap-2 border-t pt-4">
+                    <div className="flex items-center justify-between px-3 py-1">
+                      <span className="text-muted-foreground text-xs font-medium">Theme Mode</span>
+                      <ModeToggle />
+                    </div>
+                  </div>
                 </div>
-
-                <Button
-                  variant="outline"
-                  className="text-destructive hover:bg-destructive/10 w-full cursor-pointer justify-start gap-3"
-                  onClick={() => startTransition(() => signOutAction())}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Button>
-              </div>
+              )}
             </SheetContent>
           </Sheet>
         </div>
