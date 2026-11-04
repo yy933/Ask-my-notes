@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import PreviewDialog from '@/components/preview-dialog';
 import DocumentCard from '@/components/document-card';
@@ -14,6 +14,8 @@ import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import { useDocumentMutations } from '@/hooks/useDocumentMutations';
 
 export default function DocumentsPage() {
+  const supabase = createClient();
+
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
