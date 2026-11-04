@@ -19,7 +19,7 @@ export default function DocumentsPage() {
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
-  const supabase = createClient();
+
   const { user, loading: isAuthLoading } = useAuth();
 
   // document card related states
