@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { buildDocumentIndex } from '@/app/actions/upload';
 import type { DocumentItem } from '@/types';
 
@@ -7,6 +7,7 @@ export function useDocumentMutations(
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>,
   setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>
 ) {
+  const supabase = createClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [buildingIds, setBuildingIds] = useState<Record<string, boolean>>({});
   const [notices, setNotices] = useState<Record<string, { success?: boolean; message?: string }>>(

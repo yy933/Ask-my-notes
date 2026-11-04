@@ -36,7 +36,7 @@ export async function uploadDocument(
       throw new Error('File size exceeds the 3MB limit. Please upload a smaller file.');
     }
 
-    // 1. Read file content based on its type (PDF or TXT) and extract raw text with parser
+    // 2. Read file content based on its type (PDF or TXT) and extract raw text with parser
     let rawText = '';
     const arrayBuffer = await file.arrayBuffer();
 
@@ -56,7 +56,7 @@ export async function uploadDocument(
 
     if (!rawText.trim()) throw new Error('File content is empty');
 
-    // 2. upload file to supabase bucket
+    // 3. upload file to supabase bucket
     const fileExt = file.name.split('.').pop();
     const uniqueFileName = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const { data: storageData, error: storageError } = await supabase.storage
@@ -116,7 +116,7 @@ export async function buildDocumentIndex(documentId: string) {
       .single();
 
     if (fetchError || !doc || !doc.raw_text) {
-      throw new Error('Document not found or raw text is empty.');
+      throw new Error('Document not found or access denied.');
     }
 
     // Chunking and embedding (synchronous, so failures are reported to the user)
@@ -165,6 +165,7 @@ export async function buildDocumentIndex(documentId: string) {
       .from('documents')
       .update({ status: 'completed' })
       .eq('id', doc.id);
+
     if (updateError) throw new Error(`Failed to update document status: ${updateError.message}`);
     revalidatePath('/documents');
 

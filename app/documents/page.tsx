@@ -15,6 +15,8 @@ import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import { useDocumentMutations } from '@/hooks/useDocumentMutations';
 
 export default function DocumentsPage() {
+  const supabase = createClient();
+
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const supabase = createClient();
