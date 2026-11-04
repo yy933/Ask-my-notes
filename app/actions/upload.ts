@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { ai } from '@/lib/gemini';
 import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
-import { supabase } from '@/lib/supabase/supabase';
 import { getFriendlyErrorMessage } from '@/lib/errorHandler';
 import { revalidatePath } from 'next/cache';
 
@@ -21,6 +20,7 @@ export async function uploadDocument(
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
+
   if (userError || !user) {
     return { success: false, message: 'Unauthorized. Please log in.' };
   }
@@ -70,19 +70,13 @@ export async function uploadDocument(
       throw new Error(`Failed to create document record: ${storageError?.message}`);
     uploadedStoragePath = storageData.path;
 
-    // get document public url
-    const { data: publicUrlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(uploadedStoragePath);
-    const publicUrl = publicUrlData.publicUrl;
-
     // 3. write data into documents table
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
         user_id: userId,
         title: file.name,
-        file_path: publicUrl,
+        file_path: uploadedStoragePath,
         raw_text: rawText,
         status: 'pending',
       })
@@ -113,6 +107,7 @@ export async function uploadDocument(
 
 // 2. Chunking and embedding (read raw_text in documents table)
 export async function buildDocumentIndex(documentId: string) {
+  const supabase = await createClient();
   try {
     const { data: doc, error: fetchError } = await supabase
       .from('documents')
