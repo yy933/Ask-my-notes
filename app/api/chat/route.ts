@@ -50,8 +50,6 @@ export async function POST(req: Request) {
       })
       .join('\n\n');
 
-    console.log('sourcesForClient:', sourcesForClient);
-
     // 3. RAG System Prompt: Provide the context and the latest message to the AI model for generating a response
     const systemInstruction = `
 You are a helpful assistant. Answer the user's question accurately using ONLY the provided context. 

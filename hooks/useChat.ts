@@ -6,28 +6,34 @@ import type { Message, SourceItem } from '@/types';
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
 
-  const handleChatAction = async (prevState: null | string, formData: FormData) => {
-    const userMessageContent = (formData.get('userMessage') as string)?.trim();
-    if (!userMessageContent) return null;
+  const sendMessage = async (e?: React.SubmitEvent) => {
+    e?.preventDefault();
 
-    // clear input field
+    // get user message
+    const userMessageContent = input.trim();
+    if (!userMessageContent || isLoading) return;
+
+    // clear input
     setInput('');
 
-    // create updated message list
-    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessageContent }];
+    const updatedMessgaes: Message[] = [...messages, { role: 'user', content: userMessageContent }];
 
-    // update UI (add user question and empty AI bubble)
-    setMessages([...updatedMessages, { role: 'model', content: '' }]);
+    // display user message instantly
+    setMessages([...updatedMessgaes, { role: 'model', content: '' }]);
+    setIsLoading(true);
+    setIsThinking(true);
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: JSON.stringify({ messages: updatedMessgaes }),
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      if (!response.ok) throw new Error('API request failed.');
 
       const sourceHeader = response.headers.get('X-Chat-Sources');
       let sources: SourceItem[] = [];
@@ -38,43 +44,116 @@ export function useChat() {
           console.warn('Failed to parse X-Chat-Sources header', error);
         }
       }
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      if (!reader) throw new Error('Could not get reader from response body');
+      console.log('sources:', sources.length, '| header length:', sourceHeader?.length);
+      if (!reader) throw new Error('Could not get reader from response body.');
 
       let accumulatedText = '';
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        accumulatedText += decoder.decode(value, { stream: true });
 
-        const chunkText = decoder.decode(value, { stream: true });
-        accumulatedText += chunkText;
+        // get the first chunk, so set isThinking false
+        setIsThinking(false);
 
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'model', content: accumulatedText, sources };
+          updated[updated.length - 1] = {
+            role: 'model',
+            content: accumulatedText,
+            sources,
+          };
           return updated;
         });
       }
     } catch (error) {
-      console.error('Error in chat:', error);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'model', content: '⚠️ An error occurred, please try again later.' },
-      ]);
+      console.error('Error in chat: ', error);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'model',
+          content: 'An error occured. Please try again later.',
+        };
+        return updated;
+      });
+    } finally {
+      setIsLoading(false);
+      setIsThinking(false);
     }
-
-    return null;
   };
 
-  const [state, formAction, isPending] = useActionState(handleChatAction, null);
+  // const handleChatAction = async (prevState: null | string, formData: FormData) => {
+  //   const userMessageContent = (formData.get('userMessage') as string)?.trim();
+  //   if (!userMessageContent) return null;
+
+  //   // clear input field
+  //   setInput('');
+
+  //   // create updated message list
+  //   const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessageContent }];
+
+  //   // update UI (add user question and empty AI bubble)
+  //   setMessages([...updatedMessages, { role: 'model', content: '' }]);
+
+  //   try {
+  //     const response = await fetch('/api/chat', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ messages: updatedMessages }),
+  //     });
+
+  //     if (!response.ok) throw new Error('API request failed');
+
+  //     const sourceHeader = response.headers.get('X-Chat-Sources');
+  //     let sources: SourceItem[] = [];
+  //     if (sourceHeader) {
+  //       try {
+  //         sources = JSON.parse(decodeURIComponent(sourceHeader));
+  //       } catch (error) {
+  //         console.warn('Failed to parse X-Chat-Sources header', error);
+  //       }
+  //     }
+  //     const reader = response.body?.getReader();
+  //     const decoder = new TextDecoder();
+  //     if (!reader) throw new Error('Could not get reader from response body');
+
+  //     let accumulatedText = '';
+
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) break;
+
+  //       const chunkText = decoder.decode(value, { stream: true });
+  //       accumulatedText += chunkText;
+
+  //       setMessages((prev) => {
+  //         const updated = [...prev];
+  //         updated[updated.length - 1] = { role: 'model', content: accumulatedText, sources };
+  //         return updated;
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in chat:', error);
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { role: 'model', content: '⚠️ An error occurred, please try again later.' },
+  //     ]);
+  //   }
+
+  //   return null;
+  // };
+
+  // const [state, formAction, isPending] = useActionState(handleChatAction, null);
 
   return {
     messages,
     input,
     setInput,
-    formAction,
-    isPending,
+    sendMessage,
+    isLoading,
+    isThinking,
   };
 }
