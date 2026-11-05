@@ -26,7 +26,7 @@ import type { SourceItem } from '@/types';
 
 export default function ChatPage() {
   const { userName } = useAuth();
-  const { messages, input, setInput, sendMessage, isLoading, isThinking } = useChat();
+  const { messages, input, setInput, sendMessage, isLoading, isThinking, status } = useChat();
 
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -92,7 +92,7 @@ export default function ChatPage() {
                     {showThinking ? (
                       <span className="text-muted-foreground flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Searching notes & thinking...
+                        {status === 'searching' ? 'Searching notes...' : 'Thinking...'}
                       </span>
                     ) : msg.role === 'model' ? (
                       <FormattedMessage

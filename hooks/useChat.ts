@@ -1,152 +1,105 @@
 'use client';
 
-import { useState, useActionState } from 'react';
-import type { Message, SourceItem } from '@/types';
+import { useState } from 'react';
+import type { Message } from '@/types';
+
+type ChatStatus = 'idle' | 'searching' | 'generating';
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
+  const [status, setStatus] = useState<ChatStatus>('idle');
+
+  // updated last response from chatbot
+  const updateLast = (patch: Partial<Message>) =>
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated[updated.length - 1] = { ...updated[updated.length - 1], ...patch };
+      return updated;
+    });
 
   const sendMessage = async (e?: React.SubmitEvent) => {
     e?.preventDefault();
 
-    // get user message
     const userMessageContent = input.trim();
     if (!userMessageContent || isLoading) return;
 
-    // clear input
     setInput('');
 
-    const updatedMessgaes: Message[] = [...messages, { role: 'user', content: userMessageContent }];
+    const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessageContent }];
 
-    // display user message instantly
-    setMessages([...updatedMessgaes, { role: 'model', content: '' }]);
+    // display user message right after submitting
+    setMessages([...updatedMessages, { role: 'model', content: '' }]);
     setIsLoading(true);
-    setIsThinking(true);
+    setStatus('searching');
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessgaes }),
+        body: JSON.stringify({ messages: updatedMessages }),
       });
 
-      if (!response.ok) throw new Error('API request failed.');
+      if (!response.ok || !response.body) throw new Error('API request failed.');
 
-      const sourceHeader = response.headers.get('X-Chat-Sources');
-      let sources: SourceItem[] = [];
-      if (sourceHeader) {
-        try {
-          sources = JSON.parse(decodeURIComponent(sourceHeader));
-        } catch (error) {
-          console.warn('Failed to parse X-Chat-Sources header', error);
-        }
-      }
-
-      const reader = response.body?.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      console.log('sources:', sources.length, '| header length:', sourceHeader?.length);
-      if (!reader) throw new Error('Could not get reader from response body.');
 
+      let buffer = '';
       let accumulatedText = '';
+
+      const handleEvent = (line: string) => {
+        if (!line.trim()) return;
+
+        let event;
+        try {
+          event = JSON.parse(line);
+        } catch {
+          console.warn('Failed to parse stream line:', line);
+          return;
+        }
+
+        switch (event.type) {
+          case 'status':
+            setStatus(event.status);
+            break;
+          case 'sources':
+            updateLast({ sources: event.sources });
+            break;
+          case 'text':
+            setStatus('idle'); // The first word arrives. End thinking.
+            accumulatedText += event.text;
+            updateLast({ content: accumulatedText });
+            break;
+          case 'error':
+            throw new Error(event.message);
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        accumulatedText += decoder.decode(value, { stream: true });
 
-        // get the first chunk, so set isThinking false
-        setIsThinking(false);
+        buffer += decoder.decode(value, { stream: true });
 
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: 'model',
-            content: accumulatedText,
-            sources,
-          };
-          return updated;
-        });
+        // the last line might be incomplete. Save it for the next round.
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) handleEvent(line);
       }
+
+      buffer += decoder.decode();
+      handleEvent(buffer);
     } catch (error) {
       console.error('Error in chat: ', error);
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: 'model',
-          content: 'An error occured. Please try again later.',
-        };
-        return updated;
-      });
+      updateLast({ content: 'An error occurred. Please try again later.' });
     } finally {
       setIsLoading(false);
-      setIsThinking(false);
+      setStatus('idle');
     }
   };
-
-  // const handleChatAction = async (prevState: null | string, formData: FormData) => {
-  //   const userMessageContent = (formData.get('userMessage') as string)?.trim();
-  //   if (!userMessageContent) return null;
-
-  //   // clear input field
-  //   setInput('');
-
-  //   // create updated message list
-  //   const updatedMessages: Message[] = [...messages, { role: 'user', content: userMessageContent }];
-
-  //   // update UI (add user question and empty AI bubble)
-  //   setMessages([...updatedMessages, { role: 'model', content: '' }]);
-
-  //   try {
-  //     const response = await fetch('/api/chat', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ messages: updatedMessages }),
-  //     });
-
-  //     if (!response.ok) throw new Error('API request failed');
-
-  //     const sourceHeader = response.headers.get('X-Chat-Sources');
-  //     let sources: SourceItem[] = [];
-  //     if (sourceHeader) {
-  //       try {
-  //         sources = JSON.parse(decodeURIComponent(sourceHeader));
-  //       } catch (error) {
-  //         console.warn('Failed to parse X-Chat-Sources header', error);
-  //       }
-  //     }
-  //     const reader = response.body?.getReader();
-  //     const decoder = new TextDecoder();
-  //     if (!reader) throw new Error('Could not get reader from response body');
-
-  //     let accumulatedText = '';
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-  //       if (done) break;
-
-  //       const chunkText = decoder.decode(value, { stream: true });
-  //       accumulatedText += chunkText;
-
-  //       setMessages((prev) => {
-  //         const updated = [...prev];
-  //         updated[updated.length - 1] = { role: 'model', content: accumulatedText, sources };
-  //         return updated;
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error('Error in chat:', error);
-  //     setMessages((prev) => [
-  //       ...prev,
-  //       { role: 'model', content: '⚠️ An error occurred, please try again later.' },
-  //     ]);
-  //   }
-
-  //   return null;
-  // };
-
-  // const [state, formAction, isPending] = useActionState(handleChatAction, null);
 
   return {
     messages,
@@ -154,6 +107,7 @@ export function useChat() {
     setInput,
     sendMessage,
     isLoading,
-    isThinking,
+    status,
+    isThinking: status !== 'idle',
   };
 }
