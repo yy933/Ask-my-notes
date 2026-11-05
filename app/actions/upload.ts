@@ -1,9 +1,8 @@
 'use server';
-
+import { createClient } from '@/lib/supabase/server';
 import { ai } from '@/lib/gemini';
 import { PDFParse } from 'pdf-parse';
 import { chunkText } from '@/lib/chunking';
-import { createClient } from '@/lib/supabase/server';
 import { getFriendlyErrorMessage } from '@/lib/errorHandler';
 import { revalidatePath } from 'next/cache';
 
@@ -17,16 +16,15 @@ export async function uploadDocument(
   formData: FormData
 ) {
   const supabase = await createClient();
-
-  // 1. get current user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return { success: false, message: 'Unauthorized. Please sign in.' };
+    return { success: false, message: 'Unauthorized. Please log in.' };
   }
+  const userId = user.id;
 
   let uploadedStoragePath: string | null = null;
   try {
@@ -60,7 +58,7 @@ export async function uploadDocument(
 
     // 3. upload file to supabase bucket
     const fileExt = file.name.split('.').pop();
-    const uniqueFileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const uniqueFileName = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const { data: storageData, error: storageError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(uniqueFileName, arrayBuffer.slice(0), {
@@ -72,19 +70,13 @@ export async function uploadDocument(
       throw new Error(`Failed to create document record: ${storageError?.message}`);
     uploadedStoragePath = storageData.path;
 
-    // get document public url
-    const { data: publicUrlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(uploadedStoragePath);
-    const publicUrl = publicUrlData.publicUrl;
-
-    // 4. write data into documents table
+    // 3. write data into documents table
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         title: file.name,
-        file_path: publicUrl,
+        file_path: uploadedStoragePath,
         raw_text: rawText,
         status: 'pending',
       })
@@ -116,20 +108,11 @@ export async function uploadDocument(
 // 2. Chunking and embedding (read raw_text in documents table)
 export async function buildDocumentIndex(documentId: string) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    return { success: false, message: 'Unauthorized' };
-  }
   try {
     const { data: doc, error: fetchError } = await supabase
       .from('documents')
-      .select('id, title, raw_text, user_id')
+      .select('id, title, raw_text')
       .eq('id', documentId)
-      .eq('user_id', user.id)
       .single();
 
     if (fetchError || !doc || !doc.raw_text) {
@@ -160,7 +143,6 @@ export async function buildDocumentIndex(documentId: string) {
 
       // Prepare the row for insertion
       rows.push({
-        user_id: user.id,
         document_id: doc.id,
         content: chunk.content,
         embedding: JSON.stringify(embeddingVector),
@@ -182,8 +164,7 @@ export async function buildDocumentIndex(documentId: string) {
     const { error: updateError } = await supabase
       .from('documents')
       .update({ status: 'completed' })
-      .eq('id', doc.id)
-      .eq('user_id', user.id);
+      .eq('id', doc.id);
 
     if (updateError) throw new Error(`Failed to update document status: ${updateError.message}`);
     revalidatePath('/documents');

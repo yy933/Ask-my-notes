@@ -1,6 +1,14 @@
+import { getDownloadUrl } from '@/app/actions/download';
 export const handleDownload = async (fileUrl: string, fileName: string) => {
   try {
-    const response = await fetch(fileUrl);
+    // Get temporary download url from server
+    const result = await getDownloadUrl(fileUrl);
+    if (!result.success || !result.signedUrl) {
+      throw new Error(result.message);
+    }
+
+    // Get signed url and download
+    const response = await fetch(result.signedUrl);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -12,7 +20,6 @@ export const handleDownload = async (fileUrl: string, fileName: string) => {
     document.body.removeChild(a);
   } catch (error) {
     console.error('Download failed:', error);
-    // If fail, open a new window
-    window.open(fileUrl, '_blank');
+    alert('Failed to download file securely.');
   }
 };

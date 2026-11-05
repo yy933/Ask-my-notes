@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,9 @@ export default function DocumentsPage() {
   const supabase = createClient();
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+
+  const { user, loading: isAuthLoading } = useAuth();
 
   // document card related states
   const [sortBy, setSortBy] = useState('newest');
@@ -52,6 +55,9 @@ export default function DocumentsPage() {
   );
   // 1. Get all documents
   useEffect(() => {
+    // if the page is still retrieving auth status or not logging in, do not get documents
+    if (isAuthLoading || !user) return;
+
     let isMounted = true; // prevent setState after unmount
 
     async function loadDocuments() {
@@ -59,6 +65,7 @@ export default function DocumentsPage() {
         const { data, error } = await supabase
           .from('documents')
           .select('*')
+          .eq('user_id', user?.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -78,7 +85,7 @@ export default function DocumentsPage() {
         console.error('Fetching documents failed: ', error);
       } finally {
         if (isMounted) {
-          setIsLoading(false);
+          setIsLoadingDocuments(false);
         }
       }
     }
@@ -88,7 +95,10 @@ export default function DocumentsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user, isAuthLoading]);
+
+  // Derived Loading State: Calculates loader status cleanly on every render pass
+  const isCombinedLoading = isAuthLoading || (!!user && isLoadingDocuments);
 
   // Sorting documents
   const sortedDocuments = [...documents].sort((a, b) => {
@@ -140,7 +150,7 @@ export default function DocumentsPage() {
       />
 
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
+        {isCombinedLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="text-primary h-8 w-8 animate-spin" />
           </div>

@@ -5,55 +5,74 @@ import { retryWithBackoff } from '@/lib/utils';
 import type { SourceItem } from '@/types';
 
 export async function POST(req: Request) {
+  let messages: { role: string; content: string }[];
   try {
-    // Get the latest message from the request body
-    const { messages } = await req.json();
-    const latestMessage = messages[messages.length - 1]?.content;
-    if (!latestMessage) {
-      return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
-    }
+    ({ messages } = await req.json());
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
 
-    // 1. Search for relevant chunks based on the latest message and get Top 3-5 result
-    const relevantChunks = await searchSimilarChunks(latestMessage, 4, 0.4);
+  const latestMessage = messages?.[messages.length - 1]?.content;
+  if (!latestMessage) {
+    return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
+  }
 
-    // 2. Merge the relevant chunks into a single string to provide context for the AI model
-    const groupedSourcesMap = new Map<string, SourceItem>();
+  const encoder = new TextEncoder();
 
-    relevantChunks.forEach((chunk) => {
-      const docTitle = chunk.document?.title || chunk.metadata?.fileName || 'Unknown file';
-      const filePath = chunk.document?.file_path || undefined;
-      // file_path as the unique key. If file_path is not defined, use title insted
-      const uniqueKey = filePath || docTitle;
-      if (!groupedSourcesMap.has(uniqueKey)) {
-        groupedSourcesMap.set(uniqueKey, {
-          id: chunk.id,
-          title: docTitle,
-          chunkIndex: 1, // the first chunk from this doc
-          content: chunk.content, // content of the first chunk
-          file_path: filePath,
-        });
-      } else {
-        // if the same doc has several chunks, combine the chunks as the content
-        const existing = groupedSourcesMap.get(uniqueKey)!;
-        existing.content += `\n\n... [Excerpt Continues] ...\n\n${chunk.content}`;
-        if (!existing.file_path && filePath) {
-          existing.file_path = filePath;
+  const readable = new ReadableStream({
+    async start(controller) {
+      // each event - JSON（NDJSON）
+      const send = (event: object) => {
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + '\n'));
+        } catch {
+          // client disconnect
         }
-      }
-    });
+      };
 
-    const sourcesForClient: SourceItem[] = Array.from(groupedSourcesMap.values());
+      try {
+        send({ type: 'status', status: 'searching' });
 
-    const contextText = sourcesForClient
-      .map((source, index) => {
-        return `[Source ${index + 1}] (Document Title: ${source.title})\n${source.content}`;
-      })
-      .join('\n\n');
+        // 1. Search relevant chunks
+        const relevantChunks = await searchSimilarChunks(latestMessage, 4, 0.4);
 
-    console.log('sourcesForClient:', sourcesForClient);
+        // 2. Combine chunks based on documents
+        const groupedSourcesMap = new Map<string, SourceItem>();
 
-    // 3. RAG System Prompt: Provide the context and the latest message to the AI model for generating a response
-    const systemInstruction = `
+        relevantChunks.forEach((chunk) => {
+          const docTitle = chunk.document?.title || chunk.metadata?.fileName || 'Unknown file';
+          const filePath = chunk.document?.file_path || undefined;
+          // file_path as unique key. If not exists, use title instead
+          const uniqueKey = filePath || docTitle;
+
+          if (!groupedSourcesMap.has(uniqueKey)) {
+            groupedSourcesMap.set(uniqueKey, {
+              id: chunk.id,
+              title: docTitle,
+              chunkIndex: 1,
+              content: chunk.content,
+              file_path: filePath,
+            });
+          } else {
+            const existing = groupedSourcesMap.get(uniqueKey)!;
+            existing.content += `\n\n... [Excerpt Continues] ...\n\n${chunk.content}`;
+            if (!existing.file_path && filePath) {
+              existing.file_path = filePath;
+            }
+          }
+        });
+
+        const sourcesForClient: SourceItem[] = Array.from(groupedSourcesMap.values());
+
+        const contextText = sourcesForClient
+          .map(
+            (source, index) =>
+              `[Source ${index + 1}] (Document Title: ${source.title})\n${source.content}`
+          )
+          .join('\n\n');
+
+        // 3. RAG system prompt
+        const systemInstruction = `
 You are a helpful assistant. Answer the user's question accurately using ONLY the provided context. 
 If you use information from a source document, cite it as [Source 1], [Source 2], etc.
 If multiple points come from the same document, use the same [Source X] tag for that document.
@@ -63,46 +82,50 @@ Provided context:
 ${contextText || 'No relevant context found.'}
 `.trim();
 
-    // 4. Generate a streaming response using the Gemini API (Retry with backoff in case of 503 errors)
-    const response = await retryWithBackoff(async () => {
-      return await ai.models.generateContentStream({
-        model: 'gemini-3.1-flash-lite',
-        contents: messages.map((m: { role: string; content: string }) => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.content }],
-        })),
-        config: {
-          systemInstruction,
-          temperature: 0.2,
-        },
-      });
-    });
-    // 5. Stream the response back to the client
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
+        // Searching done：send sources to client and then generating responses
+        send({ type: 'sources', sources: sourcesForClient });
+        send({ type: 'status', status: 'generating' });
+
+        // 4. Call Gemini streaming（retry at 503）
+        const response = await retryWithBackoff(async () => {
+          return await ai.models.generateContentStream({
+            model: 'gemini-3.1-flash-lite',
+            contents: messages.map((m) => ({
+              role: m.role === 'user' ? 'user' : 'model',
+              parts: [{ text: m.content }],
+            })),
+            config: {
+              systemInstruction,
+              temperature: 0.2,
+            },
+          });
+        });
+
+        // 5. send chunk texts
         for await (const chunk of response) {
           const text = chunk.text;
-          if (text) {
-            controller.enqueue(encoder.encode(text));
-          }
+          if (text) send({ type: 'text', text });
         }
-        controller.close();
-      },
-    });
-    // send source as custom header to frontend
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Chat-Sources': encodeURIComponent(JSON.stringify(sourcesForClient)),
-      },
-    });
-  } catch (error) {
-    console.error('Error in chat API:', error);
+      } catch (error) {
+        console.error('Error in chat API:', error);
+        send({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Internal Server Error',
+        });
+      } finally {
+        try {
+          controller.close();
+        } catch {
+          // already close
+        }
+      }
+    },
+  });
 
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal Server Error' },
-      { status: 500 }
-    );
-  }
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+    },
+  });
 }

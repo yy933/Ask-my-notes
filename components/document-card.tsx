@@ -151,7 +151,7 @@ export default function DocumentCard({
           size="sm"
           className="cursor-pointer md:px-3"
           onClick={() => onDelete(doc)}
-          disabled={isDeleting}
+          disabled={isDeleting || isBuilding}
         >
           <div className="flex items-center justify-center">
             {isDeleting ? (

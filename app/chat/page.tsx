@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/hooks/useChat';
+import { useAuth } from '@/providers/AuthProvider';
 import { handleDownload } from '@/lib/fileDownload';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +25,9 @@ import { cn } from 'cn';
 import type { SourceItem } from '@/types';
 
 export default function ChatPage() {
-  const { messages, input, setInput, formAction, isPending } = useChat();
+  const { userName } = useAuth();
+  const { messages, input, setInput, sendMessage, isLoading, isThinking, status } = useChat();
+
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +42,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isPending]);
+  }, [messages, isLoading]);
 
   return (
     <div className="bg-background flex h-screen w-full justify-center p-4">
@@ -59,11 +62,13 @@ export default function ChatPage() {
           <div className="space-y-4 pb-4">
             {messages.length === 0 && (
               <div className="text-muted-foreground py-20 text-center">
-                <p>Hi there! How can I help you today?</p>
+                <p>Hi {userName}! How can I help you today?</p>
               </div>
             )}
 
             {messages.map((msg, index) => {
+              const isLast = index === messages.length - 1;
+              const showThinking = isLast && msg.role === 'model' && isThinking;
               return (
                 <div
                   key={index}
@@ -71,6 +76,7 @@ export default function ChatPage() {
                     msg.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
+                  {/* Bot avatar */}
                   {msg.role === 'model' && (
                     <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
                       <Bot className="text-primary h-4 w-4" />
@@ -83,7 +89,23 @@ export default function ChatPage() {
                       msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                     }`}
                   >
-                    {msg.content ? (
+                    {showThinking ? (
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {status === 'searching' ? 'Searching notes...' : 'Thinking...'}
+                      </span>
+                    ) : msg.role === 'model' ? (
+                      <FormattedMessage
+                        content={msg.content}
+                        sources={msg.sources}
+                        onSelectSource={handleSelectSource}
+                      />
+                    ) : (
+                      <div data-testid="user-message" className="whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
+                    )}
+                    {/* {msg.content ? (
                       msg.role === 'model' ? (
                         <FormattedMessage
                           content={msg.content}
@@ -100,9 +122,10 @@ export default function ChatPage() {
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Searching notes & thinking...
                       </span>
-                    )}
+                    )} */}
                   </Card>
 
+                  {/* User avatar */}
                   {msg.role === 'user' && (
                     <div className="bg-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
                       <User className="h-4 w-4" />
@@ -117,7 +140,7 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* Input Area */}
-        <form ref={formRef} action={formAction} className="flex gap-2 border-t pt-2">
+        <form ref={formRef} onSubmit={sendMessage} className="flex gap-2 border-t pt-2">
           <Textarea
             value={input}
             name="userMessage"
@@ -130,10 +153,10 @@ export default function ChatPage() {
                 formRef.current?.requestSubmit();
               }
             }}
-            disabled={isPending}
+            disabled={isLoading}
           />
-          <Button type="submit" disabled={isPending || !input.trim()} className="h-auto px-5">
-            {isPending ? (
+          <Button type="submit" disabled={isLoading || !input.trim()} className="h-auto px-5">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Send className="h-4 w-4" />
