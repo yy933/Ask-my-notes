@@ -69,10 +69,10 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 ### Step 6: User Authentication & Multi-Tenant Isolation (Upcoming)
 
-- [ ] Integrate Supabase Auth (Sign up, Login, Logout, Session management).
-- [ ] Link `user_id` to `documents` and `document_chunks` tables.
-- [ ] Implement Next.js Middleware to protect private routes (`/upload`, `/documents`).
-- [ ] Enable Row Level Security (RLS) for multi-tenant data isolation.
+- [x] Integrate Supabase Auth (Sign up, Login, Logout, Session management).
+- [x] Link `user_id` to `documents` and `document_chunks` tables.
+- [x] Implement Next.js Middleware to protect private routes (`/upload`, `/documents`).
+- [x] Enable Row Level Security (RLS) for multi-tenant data isolation.
 
 #### 🔐 Multi-Tenant Implementation Blueprint
 
