@@ -1,26 +1,44 @@
 import { test, expect } from '@playwright/test';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-const supabaseAdmin = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+async function embed(text: string): Promise<number[]> {
+  const res = await ai.models.embedContent({
+    model: 'gemini-embedding-001',
+    contents: text,
+    config: { outputDimensionality: 768, taskType: 'RETRIEVAL_DOCUMENT' },
+  });
+  const values = res.embeddings?.[0]?.values;
+  if (!values) throw new Error('Failed to generate embedding');
+  return values;
+}
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+
+const supabaseAdmin = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
 
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'password123';
 
-test.describe('RAG Chatbot E2E Flow', () => {
+test.describe('RAG Chatbot E2E Flow (real Gemini)', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'Real API smoke test: chromium only');
   let testDocumentId: string;
   let testUserId: string;
+  let uniqueFileName: string;
 
   // Create chunk for testing
-  test.beforeAll(async () => {
+  test.beforeEach(async ({}, testInfo) => {
+    uniqueFileName = `e2e-${testInfo.project.name}-${Date.now()}.txt`;
+    const content = `This is a test content for chunking in E2E cloud test. The file name is ${uniqueFileName}.`;
     // 1. Get user id by email through Service Role
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    let testUser = userData?.users.find((u) => u.email === TEST_USER_EMAIL);
 
-    if (userError || !testUser) {
-      throw new Error(`Failed to fetch test user ID for email: ${TEST_USER_EMAIL}`);
+    if (userError) {
+      throw new Error(`Failed to list users: ${userError.message}`);
     }
+    let testUser = userData?.users.find((u) => u.email === TEST_USER_EMAIL);
 
     // if test user doesn't exist, create one
     if (!testUser) {
@@ -43,10 +61,9 @@ test.describe('RAG Chatbot E2E Flow', () => {
       .from('documents')
       .insert({
         user_id: testUserId,
-        title: 'E2E Test Document',
-        file_path: 'e2e-test-file.txt',
-        raw_text:
-          'This is a test content for chunking in E2E cloud test. The file name is test.txt.',
+        title: `E2E Test Document ${uniqueFileName}`,
+        file_path: uniqueFileName,
+        raw_text: content,
         status: 'completed',
       })
       .select()
@@ -61,16 +78,16 @@ test.describe('RAG Chatbot E2E Flow', () => {
       .insert({
         user_id: testUserId,
         document_id: testDocumentId,
-        content:
-          'This is a test content for chunking in E2E cloud test. The file name is test.txt.',
-        metadata: { fileName: 'test.txt' },
-        embedding: JSON.stringify(new Array(768).fill(0)) as unknown as string,
+        content,
+        metadata: { fileName: uniqueFileName },
+        embedding: JSON.stringify(await embed(content)) as unknown as string,
       })
       .select()
       .single();
 
     if (chunkError) throw chunkError;
   });
+
   test('should send a message, receive streaming response, and show source badges', async ({
     page,
   }) => {
@@ -82,7 +99,7 @@ test.describe('RAG Chatbot E2E Flow', () => {
 
     // 3. Add queries in Textarea
     const inputArea = page.locator('textarea[name="userMessage"]');
-    await inputArea.fill('Which file did I upload?');
+    await inputArea.fill('What is the file name?');
 
     // 4. Click submit btn
     const submitButton = page.locator('button[type="submit"]');
@@ -90,15 +107,14 @@ test.describe('RAG Chatbot E2E Flow', () => {
 
     // 5. Verify if the queries are displaying in the message container
     const userMessageBubble = page.locator('[data-testid="user-message"]').last();
-    await expect(userMessageBubble).toContainText('Which file did I upload?');
+    await expect(userMessageBubble).toContainText('What is the file name?');
 
     // 6. Wait for streaming response
     // Check if AI response appears
     const aiResponseBubble = page.locator('[data-testid="ai-message"]').last();
 
     // Ensure getting responses with keywords
-    await expect(aiResponseBubble).not.toBeEmpty({ timeout: 15000 });
-    await expect(aiResponseBubble).toContainText('test.txt');
+    await expect(aiResponseBubble).toContainText(uniqueFileName);
 
     // 7. Verify if Source Badge is rendered
     const sourceBadge = aiResponseBubble.locator('[data-testid="source-badge"]');
@@ -106,8 +122,9 @@ test.describe('RAG Chatbot E2E Flow', () => {
   });
 
   // Clean up data after testing done
-  test.afterAll(async () => {
+  test.afterEach(async () => {
     if (testDocumentId) {
+      await supabaseAdmin.from('document_chunks').delete().eq('document_id', testDocumentId);
       await supabaseAdmin.from('documents').delete().eq('id', testDocumentId);
     }
   });

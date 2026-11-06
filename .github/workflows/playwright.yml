@@ -6,6 +6,13 @@ on:
     branches: [main, master]
 jobs:
   test:
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -29,12 +36,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Run Playwright tests
-        run: npx playwright test
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Run UI tests (fast, mocked)
+        run: npx playwright test chat.ui
+
+      - name: Run real Gemini smoke test
+        if: github.ref == 'refs/heads/main'
+        run: npx playwright test chat.real
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
