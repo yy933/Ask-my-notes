@@ -74,6 +74,15 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 - [x] Implement Next.js Middleware to protect private routes (`/upload`, `/documents`).
 - [x] Enable Row Level Security (RLS) for multi-tenant data isolation.
 
+#### 🌐 Google OAuth Login Implementation (Current Task)
+
+- [ ] Configure Google Provider in Supabase Dashboard (`Auth` -> `Providers` -> `Google`)
+- [ ] Set Authorized Redirect URI in Google Cloud Console (`https://<project-ref>.supabase.co/auth/v1/callback`)
+- [ ] Implement `signInWithOAuth` server action or client handler
+- [ ] Add "Continue with Google" button component to Login/Signup page
+- [ ] Handle OAuth callback redirect and auth state persistence
+- [ ] Test Google Login flow locally and in E2E tests
+
 #### 🔐 Multi-Tenant Implementation Blueprint
 
 ```mermaid
