@@ -76,11 +76,11 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 #### 🌐 Google OAuth Login Implementation (Current Task)
 
-- [ ] Configure Google Provider in Supabase Dashboard (`Auth` -> `Providers` -> `Google`)
-- [ ] Set Authorized Redirect URI in Google Cloud Console (`https://<project-ref>.supabase.co/auth/v1/callback`)
-- [ ] Implement `signInWithOAuth` server action or client handler
-- [ ] Add "Continue with Google" button component to Login/Signup page
-- [ ] Handle OAuth callback redirect and auth state persistence
+- [x] Configure Google Provider in Supabase Dashboard (`Auth` -> `Providers` -> `Google`)
+- [x] Set Authorized Redirect URI in Google Cloud Console (`https://<project-ref>.supabase.co/auth/v1/callback`)
+- [x] Implement `signInWithOAuth` server action or client handler
+- [x] Add "Continue with Google" button component to Login/Signup page
+- [x] Handle OAuth callback redirect and auth state persistence
 - [ ] Test Google Login flow locally and in E2E tests
 
 #### 🔐 Multi-Tenant Implementation Blueprint
