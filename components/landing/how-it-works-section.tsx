@@ -26,7 +26,7 @@ const steps = [
 
 export default function HowItWorksSection() {
   return (
-    <section className="bg-muted/20 border-t py-20">
+    <section className="bg-muted/20 py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">How Ask My Notes Works</h2>
@@ -39,7 +39,7 @@ export default function HowItWorksSection() {
           {steps.map((item, idx) => (
             <div
               key={idx}
-              className="bg-card relative flex flex-col items-center rounded-2xl border p-6 text-center shadow-sm transition-all hover:shadow-md"
+              className="bg-card d border-border/50 relative flex flex-col items-center rounded-2xl border p-6 text-center shadow-sm transition-all hover:shadow-md"
             >
               <div className="bg-primary/10 text-primary mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <item.icon className="h-6 w-6" />

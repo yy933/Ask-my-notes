@@ -29,7 +29,7 @@ const features = [
 
 export default function FeatureGridSection() {
   return (
-    <section className="border-t py-20">
+    <section className="bg-background py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -44,7 +44,7 @@ export default function FeatureGridSection() {
           {features.map((feature, idx) => (
             <div
               key={idx}
-              className="bg-card/50 hover:bg-card rounded-xl border p-6 transition-colors"
+              className="border-border/40 bg-card/40 hover:bg-card hover:border-border/80 rounded-2xl border p-6 shadow-sm transition-all"
             >
               <div className="bg-primary/10 text-primary mb-4 flex h-10 w-10 items-center justify-center rounded-lg">
                 <feature.icon className="h-5 w-5" />
