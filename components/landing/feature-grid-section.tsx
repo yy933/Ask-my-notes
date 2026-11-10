@@ -44,12 +44,17 @@ export default function FeatureGridSection() {
           {features.map((feature, idx) => (
             <div
               key={idx}
-              className="border-border/40 bg-card/40 hover:bg-card hover:border-border/80 rounded-2xl border p-6 shadow-sm transition-all"
+              className="group border-border/40 from-card/80 to-card/30 hover:border-primary/40 hover:shadow-primary/5 relative rounded-2xl border bg-gradient-to-b p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="bg-primary/10 text-primary mb-4 flex h-10 w-10 items-center justify-center rounded-lg">
+              <div className="via-primary/30 absolute inset-x-0 top-0 h-[1px] rounded-t-2xl bg-gradient-to-r from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+              <div className="bg-primary/10 text-primary group-hover:bg-primary/20 mb-4 flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105">
                 <feature.icon className="h-5 w-5" />
               </div>
-              <h3 className="mb-2 text-lg font-bold">{feature.title}</h3>
+
+              <h3 className="group-hover:text-primary mb-2 text-lg font-bold transition-colors">
+                {feature.title}
+              </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
             </div>
           ))}
