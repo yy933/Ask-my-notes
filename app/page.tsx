@@ -1,6 +1,8 @@
 import HeroSection from '@/components/landing/hero-section';
 import HowItWorksSection from '@/components/landing/how-it-works-section';
 import FeatureGridSection from '@/components/landing/feature-grid-section';
+import CTASection from '@/components/landing/cta-section';
+
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -8,6 +10,7 @@ export default function Home() {
         <HeroSection />
         <HowItWorksSection />
         <FeatureGridSection />
+        <CTASection />
       </main>
     </div>
   );
