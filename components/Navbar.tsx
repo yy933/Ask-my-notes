@@ -47,7 +47,6 @@ export function Navbar() {
 
   return (
     <header className="bg-background/75 after:via-border/40 sticky top-0 z-50 w-full shadow-sm backdrop-blur-md backdrop-saturate-150 transition-all after:absolute after:right-0 after:bottom-0 after:left-0 after:h-[1px] after:bg-gradient-to-r after:from-transparent after:to-transparent dark:shadow-black/40 dark:after:via-white/10">
-      {' '}
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-2.5 text-lg font-bold">
@@ -69,7 +68,7 @@ export function Navbar() {
                     <NavigationMenuList className="flex-row items-center gap-1">
                       {/* Upload Files */}
                       <NavigationMenuItem>
-                        <Link href="/upload" legacyBehavior passHref>
+                        <Link href="/upload">
                           <NavigationMenuLink
                             className={cn(
                               navigationMenuTriggerStyle(),
@@ -87,7 +86,7 @@ export function Navbar() {
 
                       {/* Document List */}
                       <NavigationMenuItem>
-                        <Link href="/documents" legacyBehavior passHref>
+                        <Link href="/documents">
                           <NavigationMenuLink
                             className={cn(
                               navigationMenuTriggerStyle(),
@@ -105,7 +104,7 @@ export function Navbar() {
 
                       {/* Ask Chatbot */}
                       <NavigationMenuItem>
-                        <Link href="/chat" legacyBehavior passHref>
+                        <Link href="/chat">
                           <NavigationMenuLink
                             className={cn(
                               navigationMenuTriggerStyle(),
