@@ -56,6 +56,7 @@ export interface AuthFormCardProps {
   title: string;
   subtitle: string;
   action: (formData: FormData) => void;
+  handleGoogleLogin: () => void;
   isPending: boolean;
   state: { success?: boolean; message?: string } | null;
   submitText: string;
