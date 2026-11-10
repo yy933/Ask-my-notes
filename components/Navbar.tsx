@@ -1,12 +1,22 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { FileText, Bot, Sparkles, Menu, CircleUser, LogOut, LogIn, Upload } from 'lucide-react';
+import {
+  FileText,
+  Bot,
+  Sparkles,
+  Menu,
+  CircleUser,
+  LogOut,
+  LogIn,
+  Upload,
+  ArrowRight,
+  UserCheck,
+} from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -15,77 +25,99 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from 'cn';
+import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ModeToggle } from '@/components/ModeToggle';
 
 export function Navbar() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, userName, loading } = useAuth();
   const pathname = usePathname();
+  const { user, userName, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const handleLogout = () => {
+    startTransition(async () => {
+      await supabase.auth.signOut();
+      router.refresh();
+      router.push('/login');
+    });
+  };
+
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-        {/* Left side: Logo / Title */}
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-          <div className="bg-primary/10 rounded-lg p-2">
-            <Sparkles className="text-primary h-5 w-5" />
+    <header className="bg-background/75 after:via-border/40 sticky top-0 z-50 w-full shadow-sm backdrop-blur-md backdrop-saturate-150 transition-all after:absolute after:right-0 after:bottom-0 after:left-0 after:h-[1px] after:bg-gradient-to-r after:from-transparent after:to-transparent dark:shadow-black/40 dark:after:via-white/10">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        {/* Logo / Brand */}
+        <Link href="/" className="flex items-center gap-2.5 text-lg font-bold">
+          <div className="bg-primary/10 text-primary ring-primary/20 flex h-9 w-9 items-center justify-center rounded-xl shadow-sm ring-1">
+            <Sparkles className="h-5 w-5" />
           </div>
-          <span className="tracking-tight">Ask My Notes</span>
+          <span className="from-foreground to-foreground/80 bg-gradient-to-r bg-clip-text tracking-tight text-transparent">
+            Ask My Notes
+          </span>
         </Link>
 
-        {/* Desktop Navigation (for desktop) */}
-        <div className="hidden items-center gap-2 md:flex">
+        {/* Desktop Navigation */}
+        <div className="hidden items-center gap-3 md:flex">
           {!loading && (
             <>
               {user ? (
                 <>
-                  {/* Login: show nav menu */}
                   <NavigationMenu>
-                    <NavigationMenuList className="gap-1">
+                    <NavigationMenuList className="flex-row items-center gap-1">
+                      {/* Upload Files */}
                       <NavigationMenuItem>
-                        <NavigationMenuLink
-                          href="/upload"
-                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                            pathname === '/upload'
-                              ? 'bg-accent text-accent-foreground font-semibold'
-                              : ''
-                          }`}
-                        >
-                          <Upload className="text-primary h-4 w-4" />
-                          <span>Upload Files</span>
-                        </NavigationMenuLink>
-                      </NavigationMenuItem>
-                      <NavigationMenuItem>
-                        <NavigationMenuLink
-                          href="/documents"
-                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                            pathname === '/documents'
-                              ? 'bg-accent text-accent-foreground font-semibold'
-                              : ''
-                          }`}
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span>Document List</span>
-                        </NavigationMenuLink>
+                        <Link href="/upload">
+                          <NavigationMenuLink
+                            className={cn(
+                              navigationMenuTriggerStyle(),
+                              'flex shrink-0 flex-row items-center gap-2 px-3 whitespace-nowrap transition-colors',
+                              pathname === '/upload'
+                                ? 'bg-accent text-accent-foreground font-semibold'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            <Upload className="text-primary h-4 w-4 shrink-0" />
+                            <span className="whitespace-nowrap">Upload Files</span>
+                          </NavigationMenuLink>
+                        </Link>
                       </NavigationMenuItem>
 
+                      {/* Document List */}
                       <NavigationMenuItem>
-                        <NavigationMenuLink
-                          href="/chat"
-                          className={`${navigationMenuTriggerStyle()} flex items-center gap-2 ${
-                            pathname === '/chat'
-                              ? 'bg-accent text-accent-foreground font-semibold'
-                              : ''
-                          }`}
-                        >
-                          <Bot className="text-primary h-4 w-4" />
-                          <span>Ask Chatbot</span>
-                        </NavigationMenuLink>
+                        <Link href="/documents">
+                          <NavigationMenuLink
+                            className={cn(
+                              navigationMenuTriggerStyle(),
+                              'flex shrink-0 flex-row items-center gap-2 px-3 whitespace-nowrap transition-colors',
+                              pathname === '/documents'
+                                ? 'bg-accent text-accent-foreground font-semibold'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            <FileText className="h-4 w-4 shrink-0" />
+                            <span className="whitespace-nowrap">Document List</span>
+                          </NavigationMenuLink>
+                        </Link>
+                      </NavigationMenuItem>
+
+                      {/* Ask Chatbot */}
+                      <NavigationMenuItem>
+                        <Link href="/chat">
+                          <NavigationMenuLink
+                            className={cn(
+                              navigationMenuTriggerStyle(),
+                              'flex shrink-0 flex-row items-center gap-2 px-3 whitespace-nowrap transition-colors',
+                              pathname === '/chat'
+                                ? 'bg-accent text-accent-foreground font-semibold'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            <Bot className="text-primary h-4 w-4 shrink-0" />
+                            <span className="whitespace-nowrap">Ask Chatbot</span>
+                          </NavigationMenuLink>
+                        </Link>
                       </NavigationMenuItem>
                     </NavigationMenuList>
                   </NavigationMenu>
@@ -96,12 +128,9 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    disabled={isPending}
                     className="text-muted-foreground hover:text-foreground cursor-pointer gap-2"
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      router.refresh();
-                      router.push('/login');
-                    }}
+                    onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4" />
                     <span>{isPending ? 'Logging out...' : 'Logout'}</span>
@@ -109,12 +138,18 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  {/* Not login：Only show Login btn */}
+                  {/* Landing / Visitor State */}
                   <ModeToggle />
                   <Link href="/login">
-                    <Button size="sm" className="cursor-pointer gap-2">
+                    <Button variant="ghost" size="sm" className="cursor-pointer gap-2">
                       <LogIn className="h-4 w-4" />
                       <span>Login</span>
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="cursor-pointer gap-2 shadow-sm">
+                      <span>Get Started</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
                 </>
@@ -123,48 +158,65 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile Hamburger Menu (for mobile) */}
+        {/* Mobile Hamburger Menu */}
         <div className="flex md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger
-              className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'cursor-pointer')}
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'icon' }),
+                'cursor-pointer shadow-none'
+              )}
             >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </SheetTrigger>
-            <SheetContent side="right" className="flex w-[280px] flex-col sm:w-[320px]">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-left">
-                  <CircleUser className="text-primary h-5 w-5" />
-                  {/* User name */}
-                  {user ? userName : 'Guest'}
+            <SheetContent side="right" className="flex w-[290px] flex-col sm:w-[320px]">
+              <SheetHeader className="text-left">
+                <SheetTitle className="flex items-center gap-2.5">
+                  {user ? (
+                    <>
+                      <div className="bg-primary/10 text-primary flex h-7 w-7 items-center justify-center rounded-full">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <span className="truncate text-base font-semibold">
+                        {userName || 'Logged in User'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CircleUser className="text-muted-foreground h-5 w-5" />
+                      <span className="text-base font-semibold">Guest</span>
+                    </>
+                  )}
                 </SheetTitle>
               </SheetHeader>
 
               {user ? (
                 <>
-                  {/* Login: Main menu */}
-                  <div className="mt-6 flex flex-1 flex-col gap-1">
+                  <div className="mt-6 flex flex-1 flex-col gap-1.5">
                     <Link
                       href="/upload"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                         pathname === '/upload'
                           ? 'bg-accent text-accent-foreground font-semibold'
-                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
                     >
                       <Upload className="text-primary h-4 w-4" />
                       <span>Upload Files</span>
                     </Link>
+
                     <Link
                       href="/documents"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                         pathname === '/documents'
                           ? 'bg-accent text-accent-foreground font-semibold'
-                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
                     >
                       <FileText className="h-4 w-4" />
                       <span>Document List</span>
@@ -173,19 +225,19 @@ export function Navbar() {
                     <Link
                       href="/chat"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                         pathname === '/chat'
                           ? 'bg-accent text-accent-foreground font-semibold'
-                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
                     >
                       <Bot className="text-primary h-4 w-4" />
                       <span>Ask Chatbot</span>
                     </Link>
                   </div>
 
-                  {/* Tools */}
-                  <div className="flex flex-col gap-2 border-t pt-4">
+                  <div className="flex flex-col gap-3 border-t pt-4">
                     <div className="flex items-center justify-between px-3 py-1">
                       <span className="text-muted-foreground text-xs font-medium">Theme Mode</span>
                       <ModeToggle />
@@ -193,26 +245,28 @@ export function Navbar() {
 
                     <Button
                       variant="outline"
+                      disabled={isPending}
                       className="text-destructive hover:bg-destructive/10 w-full cursor-pointer justify-start gap-3"
-                      onClick={async () => {
-                        await supabase.auth.signOut();
-                        router.refresh();
-                        router.push('/login');
-                      }}
+                      onClick={handleLogout}
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
+                      <span>{isPending ? 'Logging out...' : 'Logout'}</span>
                     </Button>
                   </div>
                 </>
               ) : (
-                /* Not login */
                 <div className="mt-6 flex flex-1 flex-col justify-between">
                   <div className="flex flex-col gap-2">
                     <Link href="/login" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full justify-start gap-3">
+                      <Button variant="outline" className="w-full justify-start gap-3">
                         <LogIn className="h-4 w-4" />
                         <span>Login</span>
+                      </Button>
+                    </Link>
+                    <Link href="/register" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full justify-start gap-3">
+                        <Sparkles className="h-4 w-4" />
+                        <span>Get Started Free</span>
                       </Button>
                     </Link>
                   </div>

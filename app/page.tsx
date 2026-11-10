@@ -1,9 +1,17 @@
+import HeroSection from '@/components/landing/hero-section';
+import HowItWorksSection from '@/components/landing/how-it-works-section';
+import FeatureGridSection from '@/components/landing/feature-grid-section';
+import CTASection from '@/components/landing/cta-section';
+import Footer from '@/components/landing/footer';
+
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <h1>Home Page</h1>
-      </main>
-    </div>
+    <main className="flex min-h-screen flex-col">
+      <HeroSection />
+      <HowItWorksSection />
+      <FeatureGridSection />
+      <CTASection />
+      <Footer />
+    </main>
   );
 }
