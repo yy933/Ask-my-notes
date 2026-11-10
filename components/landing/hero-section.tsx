@@ -22,8 +22,8 @@ export default function HeroSection() {
 
         {/* Subtitle */}
         <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg leading-relaxed md:text-xl">
-          Upload your documents, PDFs, or reading notes, and chat directly with your customized AI
-          assistant to get accurate answers with exact source references.
+          Upload your documents or notes, and chat directly with your customized AI assistant to get
+          accurate answers with exact source references.
         </p>
 
         {/* CTA Buttons */}
