@@ -13,6 +13,14 @@ export default defineConfig({
     // Exclude tests folder for E2E tests(Playwright)
     exclude: ['**/node_modules/**', '**/tests/**', 'e2e/**'],
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    coverage: {
+      provider: 'v8',
+      include: ['app/api/**/*.ts', 'app/actions/**/*.ts', 'app/auth/**/*.ts', 'lib/**/*.ts'],
+
+      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', 'e2e/**/*', '.next/**/*'],
+
+      reporter: ['text', 'json', 'html'],
+    },
   },
   resolve: {
     alias: {
