@@ -33,7 +33,7 @@ export default function FileUpload() {
           <input
             type="file"
             name="file"
-            accept=".txt,.pdf"
+            accept=".txt,.pdf,.md"
             disabled={isPending}
             onChange={handleFileChange}
             className="block w-full cursor-pointer text-sm text-slate-500 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-violet-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-100"

@@ -48,10 +48,15 @@ export async function uploadDocument(
       } finally {
         await parser.destroy();
       }
-    } else if (file.type.startsWith('text/plain') || file.name.endsWith('.txt')) {
+    } else if (
+      file.type.startsWith('text/plain') ||
+      file.type === 'text/markdown' ||
+      file.name.endsWith('.txt') ||
+      file.name.endsWith('.md')
+    ) {
       rawText = Buffer.from(arrayBuffer).toString('utf-8');
     } else {
-      throw new Error('Unsupported file format. Only .txt and .pdf files are supported.');
+      throw new Error('Unsupported file format. Only .txt, .pdf, and .md files are supported.');
     }
 
     if (!rawText.trim()) throw new Error('File content is empty');

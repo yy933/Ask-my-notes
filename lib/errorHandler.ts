@@ -21,7 +21,7 @@ export function getFriendlyErrorMessage(error: unknown): string {
     },
     {
       keywords: ['Unsupported file format', 'Invalid PDF'],
-      friendly: 'Unsupported format. Currently only PDF and txt files are supported.',
+      friendly: 'Unsupported format. Currently only .pdf, .txt, and .md files are supported.',
     },
     {
       keywords: ['fetch failed', 'network', 'timeout'],
