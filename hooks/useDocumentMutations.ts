@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { buildDocumentIndex } from '@/app/actions/upload';
+import { buildDocumentIndex, deleteDocuments } from '@/app/actions/upload';
 import type { DocumentItem } from '@/types';
 
 export function useDocumentMutations(
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>,
   setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>
 ) {
-  const supabase = createClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [buildingIds, setBuildingIds] = useState<Record<string, boolean>>({});
   const [notices, setNotices] = useState<Record<string, { success?: boolean; message?: string }>>(
@@ -40,7 +38,7 @@ export function useDocumentMutations(
     }
   };
 
-  // 2. Single document deletion
+  // 2. Single document deletion (server-side ownership verification)
   const handleDelete = async (doc: DocumentItem) => {
     if (!window.confirm(`Are you sure you want to delete ${doc.title}?`)) {
       return;
@@ -49,16 +47,12 @@ export function useDocumentMutations(
     try {
       setDeletingId(doc.id);
 
-      if (doc.file_path) {
-        const pathParts = doc.file_path.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-        if (fileName) {
-          await supabase.storage.from('documents').remove([fileName]);
-        }
-      }
+      const res = await deleteDocuments([doc.id]);
 
-      const { error: docError } = await supabase.from('documents').delete().eq('id', doc.id);
-      if (docError) throw docError;
+      if (!res.success) {
+        alert(res.message || 'Failed to delete the document.');
+        return;
+      }
 
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setSelectedIds((prev) => prev.filter((id) => id !== doc.id));

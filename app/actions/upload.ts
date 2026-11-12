@@ -10,6 +10,38 @@ const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3 MB
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const STORAGE_BUCKET = 'documents';
 
+// Allowed file extensions (secondary check; content signature is primary)
+const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.md'];
+
+/**
+ * Validates actual file content signatures to prevent MIME type spoofing.
+ * - PDF: checks for %PDF- magic header bytes
+ * - TXT/MD: validates UTF-8 decodability
+ */
+function validateFileContent(fileName: string, arrayBuffer: ArrayBuffer): void {
+  const ext = fileName.toLowerCase().slice(fileName.lastIndexOf('.'));
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new Error('Unsupported file format. Only .txt, .pdf, and .md files are supported.');
+  }
+
+  const bytes = new Uint8Array(arrayBuffer);
+
+  if (ext === '.pdf') {
+    // PDF magic header: %PDF-
+    const pdfHeader = new TextDecoder().decode(bytes.slice(0, 5));
+    if (pdfHeader !== '%PDF-') {
+      throw new Error('Invalid PDF file: missing PDF header signature.');
+    }
+  } else if (ext === '.txt' || ext === '.md') {
+    // Validate UTF-8 decodability
+    try {
+      new TextDecoder().decode(bytes);
+    } catch {
+      throw new Error('Invalid text file: content is not valid UTF-8.');
+    }
+  }
+}
+
 // 1. Upload files (insert records into documents table and bucket)
 export async function uploadDocument(
   prevState: { success: boolean; message: string } | null,
@@ -36,11 +68,17 @@ export async function uploadDocument(
       throw new Error('File size exceeds the 3MB limit. Please upload a smaller file.');
     }
 
-    // 2. Read file content based on its type (PDF or TXT) and extract raw text with parser
-    let rawText = '';
+    // Read file content as ArrayBuffer for content-signature validation
     const arrayBuffer = await file.arrayBuffer();
 
-    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    // Validate actual file content (not just client-provided MIME type / extension)
+    validateFileContent(file.name, arrayBuffer);
+
+    // 2. Read file content based on its type (PDF or TXT) and extract raw text with parser
+    let rawText = '';
+
+    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    if (fileExt === '.pdf') {
       const parser = new PDFParse({ data: new Uint8Array(arrayBuffer.slice(0)) });
       try {
         const result = await parser.getText();
@@ -48,12 +86,7 @@ export async function uploadDocument(
       } finally {
         await parser.destroy();
       }
-    } else if (
-      file.type.startsWith('text/plain') ||
-      file.type === 'text/markdown' ||
-      file.name.endsWith('.txt') ||
-      file.name.endsWith('.md')
-    ) {
+    } else if (fileExt === '.txt' || fileExt === '.md') {
       rawText = Buffer.from(arrayBuffer).toString('utf-8');
     } else {
       throw new Error('Unsupported file format. Only .txt, .pdf, and .md files are supported.');
@@ -62,8 +95,8 @@ export async function uploadDocument(
     if (!rawText.trim()) throw new Error('File content is empty');
 
     // 3. upload file to supabase bucket
-    const fileExt = file.name.split('.').pop();
-    const uniqueFileName = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const storageExt = file.name.split('.').pop() ?? '';
+    const uniqueFileName = `${userId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${storageExt}`;
     const { data: storageData, error: storageError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(uniqueFileName, arrayBuffer.slice(0), {
@@ -113,15 +146,28 @@ export async function uploadDocument(
 // 2. Chunking and embedding (read raw_text in documents table)
 export async function buildDocumentIndex(documentId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { success: false, message: 'Unauthorized. Please log in.' };
+  }
+
   try {
     const { data: doc, error: fetchError } = await supabase
       .from('documents')
-      .select('id, title, raw_text')
+      .select('id, title, raw_text, user_id')
       .eq('id', documentId)
       .single();
 
     if (fetchError || !doc || !doc.raw_text) {
       throw new Error('Document not found or access denied.');
+    }
+
+    if (doc.user_id !== user.id) {
+      throw new Error('Unauthorized: document ownership mismatch.');
     }
 
     // Chunking and embedding (synchronous, so failures are reported to the user)
@@ -179,5 +225,90 @@ export async function buildDocumentIndex(documentId: string) {
     console.error('Build Index Error: ', error);
     await supabase.from('documents').update({ status: 'failed' }).eq('id', documentId);
     return { success: false, message: getFriendlyErrorMessage(error) };
+  }
+}
+
+// 3. Secure document deletion (server-side ownership verification)
+export async function deleteDocuments(documentIds: string[]) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { success: false, message: 'Unauthorized. Please log in.' };
+  }
+
+  const userId = user.id;
+
+  if (!documentIds || documentIds.length === 0) {
+    return { success: false, message: 'No documents specified for deletion.' };
+  }
+
+  try {
+    // 1. Fetch target documents to verify ownership and get file paths
+    const { data: docs, error: fetchError } = await supabase
+      .from('documents')
+      .select('id, user_id, file_path')
+      .in('id', documentIds);
+
+    if (fetchError) {
+      throw new Error('Failed to fetch documents for deletion.');
+    }
+
+    if (!docs || docs.length === 0) {
+      return { success: false, message: 'No documents found.' };
+    }
+
+    // 2. Verify every requested document belongs to the authenticated user
+    const unauthorizedDocs = docs.filter((doc) => doc.user_id !== userId);
+    if (unauthorizedDocs.length > 0) {
+      return {
+        success: false,
+        message: 'Unauthorized: one or more documents do not belong to you.',
+      };
+    }
+
+    // 3. Delete storage files for documents that have a file_path
+    const filePaths = docs
+      .filter((doc) => doc.file_path)
+      .map((doc) => doc.file_path as string);
+
+    if (filePaths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove(filePaths);
+
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        // Continue with DB deletion even if storage deletion partially fails
+      }
+    }
+
+    // 4. Delete database records (cascade deletes document_chunks via FK ON DELETE CASCADE)
+    const { error: deleteError } = await supabase
+      .from('documents')
+      .delete()
+      .in('id', documentIds)
+      .eq('user_id', userId); // Additional safety: RLS + explicit eq filter
+
+    if (deleteError) {
+      throw new Error('Failed to delete document records.');
+    }
+
+    revalidatePath('/documents');
+
+    return {
+      success: true,
+      message: `${documentIds.length} document(s) deleted successfully.`,
+    };
+  } catch (error) {
+    console.error('Delete Documents Error:', error);
+    return {
+      success: false,
+      message: getFriendlyErrorMessage(error),
+    };
   }
 }
