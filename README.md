@@ -197,3 +197,13 @@ npx playwright show-report
 ```
 
 > Note: _Playwright is pre-configured with auto-waiting mechanism to seamlessly accommodate non-blocking Gemini API embedding latencies (up to 15s timeout tolerance per transaction)._
+
+## Engineering & AI-Assisted Workflow
+
+### Security & Multi-Tenant Data Isolation
+
+To protect user documents and vector embeddings in a multi-tenant environment, this project implements a defense-in-depth security model validated through AI-assisted security auditing (Cline) and automated integration tests:
+
+- **Strict Row Level Security (RLS):** Audited database migrations to revoke legacy permissive policies (`USING (true)`) and enforce strict user-scoped RLS (`auth.uid() = user_id`) across PostgreSQL tables (`documents`, `document_chunks`) and Supabase Storage buckets.
+- **Server-Side Ownership Enforcement (IDOR Prevention):** Centralized document indexing (`buildDocumentIndex`) and single/batch deletion into authenticated Server Actions that explicitly verify `doc.user_id === user.id` before mutating records or storage objects.
+- **API Boundary & Input Hardening:** Enforced explicit `supabase.auth.getUser()` checks and Zod schema validation at the `/api/chat` route handler, validated server-side file signatures/sizes on upload, and sanitized error responses to prevent internal stack trace leaks.
