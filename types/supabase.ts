@@ -86,6 +86,7 @@ export type Database = {
     Functions: {
       match_documents: {
         Args: {
+          filter_user_id?: string
           match_count?: number
           match_threshold?: number
           query_embedding: string

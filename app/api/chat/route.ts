@@ -1,18 +1,51 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { ai } from '@/lib/gemini';
 import { searchSimilarChunks } from '@/lib/retrieval';
 import { retryWithBackoff } from '@/lib/utils';
+import { z } from 'zod';
 import type { SourceItem } from '@/types';
 
+const chatRequestSchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string().min(1),
+      })
+    )
+    .nonempty(),
+});
+
 export async function POST(req: Request) {
+  // Authentication: verify user via Supabase Auth JWT
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Input validation with Zod
   let messages: { role: string; content: string }[];
   try {
-    ({ messages } = await req.json());
+    const body = await req.json();
+    const parsed = chatRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request body: ' + parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    messages = parsed.data.messages;
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const latestMessage = messages?.[messages.length - 1]?.content;
+  const latestMessage = messages[messages.length - 1]?.content;
   if (!latestMessage) {
     return NextResponse.json({ error: 'No message content provided' }, { status: 400 });
   }
@@ -110,7 +143,7 @@ ${contextText || 'No relevant context found.'}
         console.error('Error in chat API:', error);
         send({
           type: 'error',
-          message: error instanceof Error ? error.message : 'Internal Server Error',
+          message: 'Internal Server Error',
         });
       } finally {
         try {

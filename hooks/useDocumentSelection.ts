@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { deleteDocuments } from '@/app/actions/upload';
 import type { DocumentItem } from '@/types';
 
 export function useDocumentSelection(
   documents: DocumentItem[],
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
 ) {
-  const supabase = createClient();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
@@ -26,7 +25,7 @@ export function useDocumentSelection(
     }
   };
 
-  // batch deletion
+  // batch deletion (server-side ownership verification)
   const handleBatchDelete = async () => {
     if (selectedIds.length === 0) return;
     if (
@@ -38,21 +37,12 @@ export function useDocumentSelection(
     try {
       setIsBatchDeleting(true);
 
-      // 1. Remove files from Supabase Storage
-      const selectedDocs = documents.filter((d) => selectedIds.includes(d.id));
-      for (const doc of selectedDocs) {
-        if (doc.file_path) {
-          const pathParts = doc.file_path.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          if (fileName) {
-            await supabase.storage.from('documents').remove([fileName]);
-          }
-        }
-      }
+      const res = await deleteDocuments(selectedIds);
 
-      // 2. Remove record from documents table
-      const { error } = await supabase.from('documents').delete().in('id', selectedIds);
-      if (error) throw error;
+      if (!res.success) {
+        alert(res.message || 'Failed to delete selected documents.');
+        return;
+      }
 
       // 3. Update UI
       setDocuments((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
