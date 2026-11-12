@@ -1,0 +1,38 @@
+# Repository Rules & Engineering Standards
+
+## 1. Tech Stack & Architecture
+
+- **Stack:** Next.js (App Router), React, TypeScript (strict), Node.js, Supabase (Auth with Email & Google OAuth, Storage, PostgreSQL + `pgvector`).
+- **Testing:** Vitest (unit & integration tests), Playwright (E2E tests).
+- **Folder Structure:**
+  - `app/` — Next.js App Router pages, layouts, and API Route Handlers (`app/api/**`). Keep route handlers thin.
+  - `components/` — Reusable React UI components. Default to Server Components; add `'use client'` only when state, effects, or browser events are needed.
+  - `lib/` — Pure TypeScript business logic (fetch document contents, text chunking, embedding generation, vector retrieval). Keep this free of Next.js `Request`/`Response` dependencies so Vitest can test it directly.
+  - `lib/supabase/` — Typed Supabase server, browser, and middleware clients.
+  - `types/` — Shared TypeScript interfaces.
+
+  ## 2. TypeScript & Code Style
+
+- Strict TypeScript is mandatory. Never use `any`, `@ts-ignore`, or non-null assertions (`!`) without an explicit runtime guard.
+- Validate all external inputs (API request bodies, form payloads, query params) with Zod schemas.
+- Handle errors explicitly. Return clean, structured JSON error responses (`{ error: string }`) with proper HTTP status codes (`400`, `401`, `403`, `404`, `500`)—never leak raw database or stack trace errors to the client.
+
+## 3. Security & Supabase Guardrails
+
+- **Auth Verification:** In every protected Server Action, Route Handler, and Middleware check, verify the user with `supabase.auth.getUser()`. Never trust `getSession()` alone on the server.
+- **OAuth Safety:** In `/app/auth/callback`, validate the `next` redirect parameter to ensure it is a relative internal path (starting with `/` and not `//`) to prevent open redirects.
+- **Row Level Security (RLS):** All database queries and `pgvector` RPC calls (`match_document_chunks`) must run under the authenticated user's session so RLS enforces `auth.uid() = user_id`. Never use `SUPABASE_SERVICE_ROLE_KEY` in user-facing routes unless strictly required and manually scoped by `user.id`.
+- **Storage & Uploads:** Validate file MIME type (`.pdf`, `.txt`, `.md`) and file size on the server. Scope all Storage paths under `${user.id}/`.
+- **RAG Prompt Safety:** Wrap retrieved document chunks in clear XML delimiters (e.g., `<context>...</context>`) inside system prompts and instruct the LLM to answer strictly from the provided context.
+
+## 4. RAG Pipeline Rules
+
+- **Status Tracking:** Always update `documents.status` cleanly across transitions (`pending` -> `completed` or `failed` with error message).
+
+## 5. Testing & Verification Workflow
+
+- Any new utility or service in `lib/` requires corresponding unit/integration tests in `__tests__/`.
+- Any change to auth, document upload, ingestion, or chat flows requires checking existing Playwright E2E tests and adding edge-case coverage when applicable.
+- **Definition of Done:** Before finishing any coding task, run:
+  1. `npx tsc --noEmit` (must pass with 0 type errors)
+  2. `npm run test` (Vitest suite must pass)
