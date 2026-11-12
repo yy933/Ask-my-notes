@@ -1,11 +1,24 @@
-import { createClient } from '@/lib/supabase/client';
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
 
 export async function fetchFullDocumentContent(documentId: string): Promise<string> {
-  const supabase = createClient();
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('Unauthorized. Please log in.');
+  }
+
   const { data: chunks, error } = await supabase
     .from('document_chunks')
     .select('content')
     .eq('document_id', documentId)
+    .eq('user_id', user.id)
     .order('id', { ascending: true });
 
   if (error) {
@@ -17,6 +30,6 @@ export async function fetchFullDocumentContent(documentId: string): Promise<stri
     return 'No content available for this document.';
   }
 
-  // combine all the chunk and return the combined content
+  // Combine all chunks and return the combined content
   return chunks.map((c) => c.content).join('\n\n');
 }
