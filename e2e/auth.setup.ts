@@ -24,3 +24,21 @@ setup('authenticate', async ({ page }) => {
   // 6. Save current state（including Supabase Auth Cookies）
   await page.context().storageState({ path: authFile });
 });
+
+// User B auth
+const authFileB = 'e2e/.auth/userB.json';
+
+setup('authenticate user B', async ({ page }) => {
+  await page.goto('/login');
+  await page
+    .locator('input[name="email"]')
+    .fill(process.env.TEST_USER_B_EMAIL || 'userB@example.com');
+  await page
+    .locator('input[name="password"]')
+    .fill(process.env.TEST_USER_B_PASSWORD || 'password123');
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL('**/documents');
+  await expect(page.locator('h1:has-text("Knowledge Base")')).toBeVisible();
+
+  await page.context().storageState({ path: authFileB });
+});
