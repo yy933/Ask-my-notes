@@ -43,7 +43,10 @@ export default function DocumentCard({
   onDelete,
 }: DocumentCardProps) {
   return (
-    <Card className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between">
+    <Card
+      className="flex flex-col gap-4 p-4 shadow-xs md:flex-row md:items-center md:justify-between"
+      data-testid={`card-${doc.id}`}
+    >
       <div className="flex items-center gap-3 md:items-center">
         <input
           type="checkbox"
@@ -55,7 +58,9 @@ export default function DocumentCard({
           <FileText className="text-primary h-5 w-5" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm leading-none font-semibold">{doc.title}</h3>
+          <h3 className="text-sm leading-none font-semibold" data-testid="doc-title">
+            {doc.title}
+          </h3>
           <p className="text-muted-foreground text-xs">
             Uploaded time: {new Date(doc.created_at).toLocaleString()}
           </p>
@@ -152,6 +157,7 @@ export default function DocumentCard({
           className="cursor-pointer md:px-3"
           onClick={() => onDelete(doc)}
           disabled={isDeleting || isBuilding}
+          data-testid={`${doc.title}-delete-btn`}
         >
           <div className="flex items-center justify-center">
             {isDeleting ? (
