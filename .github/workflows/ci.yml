@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Least privilege: these jobs only need to read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR makes the older run obsolete, so cancel it.
+# (Unlike the e2e workflow, these checks share no external state, so parallel runs are safe.)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, lint, unit & integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Pin this to the Node version you use locally (check with `node -v`)
+          # once you have confirmed it, so CI and local runs match.
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # `vitest run` executes once and exits (no watch mode).
+      - name: Unit & integration tests (Vitest)
+        run: npx vitest run
+        # If any test reads real env vars, add them here from GitHub Secrets.
+        # Prefer mocking so this job needs no secrets at all.
+        # env:
+        #   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        #   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
