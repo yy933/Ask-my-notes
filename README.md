@@ -207,3 +207,61 @@ To protect user documents and vector embeddings in a multi-tenant environment, t
 - **Strict Row Level Security (RLS):** Audited database migrations to revoke legacy permissive policies (`USING (true)`) and enforce strict user-scoped RLS (`auth.uid() = user_id`) across PostgreSQL tables (`documents`, `document_chunks`) and Supabase Storage buckets.
 - **Server-Side Ownership Enforcement (IDOR Prevention):** Centralized document indexing (`buildDocumentIndex`) and single/batch deletion into authenticated Server Actions that explicitly verify `doc.user_id === user.id` before mutating records or storage objects.
 - **API Boundary & Input Hardening:** Enforced explicit `supabase.auth.getUser()` checks and Zod schema validation at the `/api/chat` route handler, validated server-side file signatures/sizes on upload, and sanitized error responses to prevent internal stack trace leaks.
+
+## Continuous Integration
+
+[![CI](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml)
+[![Playwright Tests](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml)
+
+Two GitHub Actions workflows run on every push and pull request to `main`:
+
+| Workflow                                | What it runs                                                                                                 | Notes                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| **CI** (`ci.yml`)                       | `tsc --noEmit`, ESLint, Vitest (unit + integration)                                                          | Fast feedback. A newer push cancels the older run.                        |
+| **Playwright Tests** (`playwright.yml`) | Production build, mocked UI tests, two-user data-isolation tests, and a real Gemini smoke test (`main` only) | Runs against a dedicated Supabase test project; never against production. |
+
+### Design decisions
+
+- **Fast checks first, slow checks separate.** Type, lint, and unit failures are reported in minutes without waiting for a browser run.
+- **Mocked vs. real AI calls.** UI tests mock the model for speed and determinism. A single real Gemini smoke test on `main` confirms the integration still works end to end (embedding, retrieval, streaming answer, source badges).
+- **Isolation tests always run.** The data-isolation suite executes even when an earlier test step fails, so a security regression is never hidden by an unrelated failure.
+- **E2E runs are serialized.** The suite shares one Supabase test project and fixed test accounts, so the workflow uses a single concurrency group and does not cancel in-progress runs.
+- **Separate test environment.** E2E tests use a service-role key and create/delete data, so they run against their own Supabase project. Its schema is built from `supabase/migrations`, which keeps it reproducible. Test accounts differ from any other environment, so a mis-pointed run fails at login instead of silently touching real data.
+- **Guard against a stale build.** `NEXT_PUBLIC_*` values are inlined at build time. The Playwright setup fails if the app's auth cookie belongs to a different Supabase project than the one in the environment, and `reuseExistingServer` is off so a leftover server is never reused.
+- **Secrets stay in GitHub Secrets.** No keys are committed, and each job has a timeout. The Playwright report is uploaded as an artifact (30-day retention) for debugging.
+
+### Running the tests locally
+
+```bash
+npx tsc --noEmit        # type check
+npm run lint            # ESLint
+npx vitest run          # unit + integration tests
+npx playwright test     # E2E tests (needs the test environment below)
+```
+
+**E2E test environment (one-time setup)**
+
+1. Create a separate Supabase project for tests. Do not reuse your production project.
+2. Apply the schema: `npx supabase link --project-ref <test-project-ref>`, then `npx supabase db push`.
+3. In the test project's Auth settings, enable email sign-in and turn off email confirmation. Add `http://localhost:3000` to the redirect URLs.
+4. Create two test users (User A and User B) with auto-confirm, using credentials different from any other environment.
+5. Create `.env.test.local` (git-ignored) with these variables:
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   GEMINI_API_KEY=
+   TEST_USER_EMAIL=
+   TEST_USER_PASSWORD=
+   TEST_USER_B_EMAIL=
+   TEST_USER_B_PASSWORD=
+   ```
+
+   These must be the **test** project's values. Never put production keys in this file.
+
+The first local E2E run builds the app with these variables, so it takes a little longer.
+
+<!-- Add this bullet to "Design decisions" once branch protection is enabled:
+- **Merge gate.** `main` is protected: the CI and Playwright checks must pass before merging.
+-->
