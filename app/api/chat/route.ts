@@ -35,10 +35,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = chatRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid request body: ' + parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid request body: ' }, { status: 400 });
     }
     messages = parsed.data.messages;
   } catch {

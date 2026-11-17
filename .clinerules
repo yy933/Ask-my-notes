@@ -34,5 +34,5 @@
 - Any new utility or service in `lib/` requires corresponding unit/integration tests in `__tests__/`.
 - Any change to auth, document upload, ingestion, or chat flows requires checking existing Playwright E2E tests and adding edge-case coverage when applicable.
 - **Definition of Done:** Before finishing any coding task, run:
-  1. `npx tsc --noEmit` (must pass with 0 type errors)
+  1. `npm run typecheck` (must pass with 0 type errors)
   2. `npm run test` (Vitest suite must pass)
