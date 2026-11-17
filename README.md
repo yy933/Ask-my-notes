@@ -6,11 +6,29 @@ An AI-powered search & chat engine for your private docs, built with Next.js, Su
 
 ## Key Feature
 
+Two core features build the Ask My Notes experience:
+
+- **AI Chatbot with Source Citations.** Users upload documents and then ask questions in plain English. The app converts the query into a vector embedding, retrieves the top matching chunks from the `document_chunks` table via the `match_documents` RPC function, injects the retrieved chunks into a RAG system prompt, and streams a Gemini response. Every AI result carries `[Source X]` badges linked to the original uploaded file.
+- **Document Management & Ingestion.** Users upload `.txt`, `.pdf`, or `.md` files (max 3 MB). Uploads are fast and synchronous: the file is stored in Supabase Storage and a `pending` document record is created immediately. Indexing (chunking + Gemini embedding) is manual, triggered by a "Feed the chatbot" button, and reports per-document status (`pending` → `completed` / `failed`).
+
 ## System Architecture Diagram
 
 ![System architecture diagram](/public/System%20architecture%20diagram.svg)
 
 ## Tech Stack & Architectural Decisions
+
+| Area | Choice | Architectural/Engineering Decision |
+| --- | --- | --- |
+| **Frontend / App** | Next.js (App Router) + React 19 + TypeScript (strict) | App Router pages, Server Actions, and route handlers; Server Components by default, `'use client'` only where state/effects/browser events are required. |
+| **Styling / UI** | Tailwind CSS v4 + `tw-animate-css` + `shadcn/ui` (base-nova) | `shadcn/ui` components (`button`, `input`, `card`, `dialog`, `sheet`, `badge`, `scroll-area`, etc.) built on `@base-ui/react` with `class-variance-authority` and a shared `cn()` utility. `app/globals.css` imports `tailwindcss`, `tw-animate-css`, `shadcn/tailwind.css`, and defines inline theme tokens with CSS variables. |
+| **Database** | Supabase (PostgreSQL + pgvector) | `documents` and `document_chunks` tables, HNSW vector index for cosine similarity, and a `match_documents` RPC function. Schemas are maintained as versioned SQL migrations in `supabase/migrations`. |
+| **Vector Search** | Supabase `match_documents()` RPC | Cosine similarity search (`<=>`) with `match_threshold`, `match_count`, and `filter_user_id` so retrieval is always tenant-scoped; RLS enforces `auth.uid() = user_id`. |
+| **Embedding / LLM** | Google Gemini (`@google/genai`) | `gemini-embedding-001` (768-dim, `RETRIEVAL_QUERY` for search / `RETRIEVAL_DOCUMENT` for index) and `gemini-3.1-flash-lite` for chat. Embeddings for a document are generated in batches with a 3 s delay between chunks to stay within the Gemini Free Tier rate limits. |
+| **Authentication** | Supabase Auth (Email + Google OAuth) | `signInWithOAuth('/auth/callback')` + `signInWithPassword`/`signUp` server actions; Next.js Middleware redirects unauthenticated users from `/documents`, `/chat`, and `/upload`, and `supabase.auth.getUser()` is re-checked in every protected Server Action and route handler. |
+| **File Storage** | Supabase Storage (`documents` bucket) | Bucket scoped to `${user.id}/…` paths, 3 MB size limit, allowed MIME types (`application/pdf`, `text/plain`, `text/markdown`, `text/x-markdown`). `getDownloadUrl` generates 60-second signed URLs for downloads. |
+| **Text Processing** | `pdf-parse` + custom chunking | `.txt`/`.md` parsed as UTF-8 strings; PDFs parsed with `pdf-parse`. `chunkText(text, chunkSize, overlap)` is configurable (document indexing uses 1500-char chunks with 150-char overlap). |
+| **Error Handling** | Unified error mapping | `getFriendlyErrorMessage` maps Gemini quota/API/network errors to user-friendly messages; raw stack traces and internal error details are never returned to the client. |
+| **Testing** | Vitest (unit/integration) + Playwright (E2E) + GitHub Actions CI | Unit/integration tests are hermetic and mock Supabase, Gemini, and the PDF parser. E2E suite covers login, upload, chat UI, data isolation, and a real-Gemini smoke test on `main`. CI runs `typecheck`, `lint`, unit + integration tests on PRs; Playwright runs UI, E2E, data-isolation, and smoke tests with a dedicated test Supabase project. |
 
 ## Development Roadmap (Completed Checklist)
 
