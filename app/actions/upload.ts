@@ -35,7 +35,7 @@ function validateFileContent(fileName: string, arrayBuffer: ArrayBuffer): void {
   } else if (ext === '.txt' || ext === '.md') {
     // Validate UTF-8 decodability
     try {
-      new TextDecoder().decode(bytes);
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     } catch {
       throw new Error('Invalid text file: content is not valid UTF-8.');
     }
@@ -272,14 +272,10 @@ export async function deleteDocuments(documentIds: string[]) {
     }
 
     // 3. Delete storage files for documents that have a file_path
-    const filePaths = docs
-      .filter((doc) => doc.file_path)
-      .map((doc) => doc.file_path as string);
+    const filePaths = docs.filter((doc) => doc.file_path).map((doc) => doc.file_path as string);
 
     if (filePaths.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .remove(filePaths);
+      const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove(filePaths);
 
       if (storageError) {
         console.error('Storage deletion error:', storageError);

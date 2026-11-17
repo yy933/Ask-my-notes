@@ -47,8 +47,11 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
+      - name: E2E tests (mocked AI)
+        run: npx playwright test --grep-invert "real Gemini"
+
       - name: Run real Gemini smoke test
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && !cancelled()
         run: npx playwright test chat.real
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -24,9 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "typecheck": "next typegen && tsc --noEmit",
-    "test:unit": "vitest run __tests__/unit",
-    "test:integration": "vitest run __tests__/integration"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

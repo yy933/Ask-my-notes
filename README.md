@@ -235,7 +235,7 @@ Two GitHub Actions workflows run on every push and pull request to `main`:
 ```bash
 npm run typecheck       # type check
 npm run lint            # ESLint
-npm run test:unit       # unit + integration tests
+npm run test            # unit + integration tests
 npx playwright test     # E2E tests (needs the test environment below)
 ```
 
