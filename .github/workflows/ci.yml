@@ -42,7 +42,7 @@ jobs:
 
       # `vitest run` executes once and exits (no watch mode).
       - name: Unit & integration tests (Vitest)
-        run: npx vitest run
+        run: npm run test:unit
         # If any test reads real env vars, add them here from GitHub Secrets.
         # Prefer mocking so this job needs no secrets at all.
         # env:
