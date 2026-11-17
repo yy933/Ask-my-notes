@@ -233,7 +233,7 @@ Two GitHub Actions workflows run on every push and pull request to `main`:
 ### Running the tests locally
 
 ```bash
-npx tsc --noEmit        # type check
+npm run typecheck       # type check
 npm run lint            # ESLint
 npx vitest run          # unit + integration tests
 npx playwright test     # E2E tests (needs the test environment below)
