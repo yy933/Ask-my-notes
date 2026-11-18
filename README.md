@@ -17,18 +17,162 @@ Two core features build the Ask My Notes experience:
 
 ## Tech Stack & Architectural Decisions
 
-| Area | Choice | Architectural/Engineering Decision |
-| --- | --- | --- |
-| **Frontend / App** | Next.js (App Router) + React 19 + TypeScript (strict) | App Router pages, Server Actions, and route handlers; Server Components by default, `'use client'` only where state/effects/browser events are required. |
-| **Styling / UI** | Tailwind CSS v4 + `tw-animate-css` + `shadcn/ui` (base-nova) | `shadcn/ui` components (`button`, `input`, `card`, `dialog`, `sheet`, `badge`, `scroll-area`, etc.) built on `@base-ui/react` with `class-variance-authority` and a shared `cn()` utility. `app/globals.css` imports `tailwindcss`, `tw-animate-css`, `shadcn/tailwind.css`, and defines inline theme tokens with CSS variables. |
-| **Database** | Supabase (PostgreSQL + pgvector) | `documents` and `document_chunks` tables, HNSW vector index for cosine similarity, and a `match_documents` RPC function. Schemas are maintained as versioned SQL migrations in `supabase/migrations`. |
-| **Vector Search** | Supabase `match_documents()` RPC | Cosine similarity search (`<=>`) with `match_threshold`, `match_count`, and `filter_user_id` so retrieval is always tenant-scoped; RLS enforces `auth.uid() = user_id`. |
-| **Embedding / LLM** | Google Gemini (`@google/genai`) | `gemini-embedding-001` (768-dim, `RETRIEVAL_QUERY` for search / `RETRIEVAL_DOCUMENT` for index) and `gemini-3.1-flash-lite` for chat. Embeddings for a document are generated in batches with a 3 s delay between chunks to stay within the Gemini Free Tier rate limits. |
-| **Authentication** | Supabase Auth (Email + Google OAuth) | `signInWithOAuth('/auth/callback')` + `signInWithPassword`/`signUp` server actions; Next.js Middleware redirects unauthenticated users from `/documents`, `/chat`, and `/upload`, and `supabase.auth.getUser()` is re-checked in every protected Server Action and route handler. |
-| **File Storage** | Supabase Storage (`documents` bucket) | Bucket scoped to `${user.id}/…` paths, 3 MB size limit, allowed MIME types (`application/pdf`, `text/plain`, `text/markdown`, `text/x-markdown`). `getDownloadUrl` generates 60-second signed URLs for downloads. |
-| **Text Processing** | `pdf-parse` + custom chunking | `.txt`/`.md` parsed as UTF-8 strings; PDFs parsed with `pdf-parse`. `chunkText(text, chunkSize, overlap)` is configurable (document indexing uses 1500-char chunks with 150-char overlap). |
-| **Error Handling** | Unified error mapping | `getFriendlyErrorMessage` maps Gemini quota/API/network errors to user-friendly messages; raw stack traces and internal error details are never returned to the client. |
-| **Testing** | Vitest (unit/integration) + Playwright (E2E) + GitHub Actions CI | Unit/integration tests are hermetic and mock Supabase, Gemini, and the PDF parser. E2E suite covers login, upload, chat UI, data isolation, and a real-Gemini smoke test on `main`. CI runs `typecheck`, `lint`, unit + integration tests on PRs; Playwright runs UI, E2E, data-isolation, and smoke tests with a dedicated test Supabase project. |
+| Area                | Choice                                                           | Architectural/Engineering Decision                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend / App**  | Next.js (App Router) + React 19 + TypeScript (strict)            | App Router pages, Server Actions, and route handlers; Server Components by default, `'use client'` only where state/effects/browser events are required.                                                                                                                                                                                           |
+| **Styling / UI**    | Tailwind CSS v4 + `tw-animate-css` + `shadcn/ui` (base-nova)     | `shadcn/ui` components (`button`, `input`, `card`, `dialog`, `sheet`, `badge`, `scroll-area`, etc.) built on `@base-ui/react` with `class-variance-authority` and a shared `cn()` utility. `app/globals.css` imports `tailwindcss`, `tw-animate-css`, `shadcn/tailwind.css`, and defines inline theme tokens with CSS variables.                   |
+| **Database**        | Supabase (PostgreSQL + pgvector)                                 | `documents` and `document_chunks` tables, HNSW vector index for cosine similarity, and a `match_documents` RPC function. Schemas are maintained as versioned SQL migrations in `supabase/migrations`.                                                                                                                                              |
+| **Vector Search**   | Supabase `match_documents()` RPC                                 | Cosine similarity search (`<=>`) with `match_threshold`, `match_count`, and `filter_user_id` so retrieval is always tenant-scoped; RLS enforces `auth.uid() = user_id`.                                                                                                                                                                            |
+| **Embedding / LLM** | Google Gemini (`@google/genai`)                                  | `gemini-embedding-001` (768-dim, `RETRIEVAL_QUERY` for search / `RETRIEVAL_DOCUMENT` for index) and `gemini-3.1-flash-lite` for chat. Embeddings for a document are generated in batches with a 3 s delay between chunks to stay within the Gemini Free Tier rate limits.                                                                          |
+| **Authentication**  | Supabase Auth (Email + Google OAuth)                             | `signInWithOAuth('/auth/callback')` + `signInWithPassword`/`signUp` server actions; Next.js Middleware redirects unauthenticated users from `/documents`, `/chat`, and `/upload`, and `supabase.auth.getUser()` is re-checked in every protected Server Action and route handler.                                                                  |
+| **File Storage**    | Supabase Storage (`documents` bucket)                            | Bucket scoped to `${user.id}/…` paths, 3 MB size limit, allowed MIME types (`application/pdf`, `text/plain`, `text/markdown`, `text/x-markdown`). `getDownloadUrl` generates 60-second signed URLs for downloads.                                                                                                                                  |
+| **Text Processing** | `pdf-parse` + custom chunking                                    | `.txt`/`.md` parsed as UTF-8 strings; PDFs parsed with `pdf-parse`. `chunkText(text, chunkSize, overlap)` is configurable (document indexing uses 1500-char chunks with 150-char overlap).                                                                                                                                                         |
+| **Error Handling**  | Unified error mapping                                            | `getFriendlyErrorMessage` maps Gemini quota/API/network errors to user-friendly messages; raw stack traces and internal error details are never returned to the client.                                                                                                                                                                            |
+| **Testing**         | Vitest (unit/integration) + Playwright (E2E) + GitHub Actions CI | Unit/integration tests are hermetic and mock Supabase, Gemini, and the PDF parser. E2E suite covers login, upload, chat UI, data isolation, and a real-Gemini smoke test on `main`. CI runs `typecheck`, `lint`, unit + integration tests on PRs; Playwright runs UI, E2E, data-isolation, and smoke tests with a dedicated test Supabase project. |
+
+## Getting Started / Local Installation
+
+### 🗄️️ Database Setup & Type Generation (Supabase)
+
+This project utilizes **Supabase** integrated with the `pgvector` extension for vector similarity searches and automatic TypeScript type generation.
+
+#### 1. Database Migrations via Supabase CLI
+
+All database schemas, `pgvector` extensions, HNSW indexes, and RPC search functions are version-controlled using Supabase migrations under [`/supabase/migrations`](./supabase/migrations).
+
+To apply these migrations to your Supabase project:
+
+```bash
+# 1. Link your local project to your Supabase project
+npx supabase link --project-ref <your-project-ref-id>
+
+# 2. Push database migrations to remote
+npx supabase db push
+```
+
+#### 2. Generate TypeScript Definitions
+
+To ensure full type safety with Supabase Client queries, generate TypeScript types directly from your database schema:
+
+```bash
+npx supabase gen types typescript --project-id <your-project-ref-id> > types/database.ts
+```
+
+## Testing
+
+This project employs **End-to-End (E2E) Testing** using [Playwright](https://playwright.dev/) to guarantee reliability across document ingestion, vector retrieval, and the conversational RAG pipeline.
+
+### E2E Integration Suite (Playwright)
+
+The E2E suite verifies the critical "Happy Path" of the application, simulating real user interactions with the Next.js frontend, Server/Client Action state processing, Gemini Embedding & LLM generation, and Supabase Vector Database persistence.
+
+#### Verified Scenarios
+
+- **File Upload & Validation:** Ensures `.pdf` and `.txt` files pass validation constraints (e.g., file size limits, MIME types).
+- **Ingestion Pipeline:** Verifies full action execution including text extraction, chunking, and vector generation.
+- **RAG Chatbot & Streaming Response:**
+  - Simulates user queries in the Chat UI (built with React 19 `useActionState` and custom hooks).
+  - Verifies real-time `ReadableStream` response streaming (typewriter effect).
+  - Validates that Supabase vector retrieval correctly supplies context and dynamically renders interactive **Source Badges** (`[Source X]`) in the UI.
+- **Async Feedback & UI State:** Ensures proper loading indicators (`isPending`) and dynamic button/textarea disabling states.
+
+### 🚀 Running Tests Locally
+
+Before running E2E tests, ensure your local development server is running and your `.env.local` contains valid Supabase and Gemini credentials.
+
+```bash
+# Option 1: Run tests with Playwright Interactive UI Mode (Recommended for debugging)
+npx playwright test --ui
+
+# Option 2: Run tests in headless mode (Command line)
+npx playwright test
+
+# Option 3: View HTML execution and trace reports
+npx playwright show-report
+```
+
+> Note: _Playwright is pre-configured with auto-waiting mechanism to seamlessly accommodate non-blocking Gemini API embedding latencies (up to 15s timeout tolerance per transaction)._
+
+## Engineering & AI-Assisted Workflow
+
+### Security & Multi-Tenant Data Isolation
+
+To protect user documents and vector embeddings in a multi-tenant environment, this project implements a defense-in-depth security model validated through AI-assisted security auditing ([Cline](https://cline.bot/)) and automated integration tests:
+
+- **Strict Row Level Security (RLS):** Audited database migrations to revoke legacy permissive policies (`USING (true)`) and enforce strict user-scoped RLS (`auth.uid() = user_id`) across PostgreSQL tables (`documents`, `document_chunks`) and Supabase Storage buckets.
+- **Server-Side Ownership Enforcement (IDOR Prevention):** Centralized document indexing (`buildDocumentIndex`) and single/batch deletion into authenticated Server Actions that explicitly verify `doc.user_id === user.id` before mutating records or storage objects.
+- **API Boundary & Input Hardening:** Enforced explicit `supabase.auth.getUser()` checks and Zod schema validation at the `/api/chat` route handler, validated server-side file signatures/sizes on upload, and sanitized error responses to prevent internal stack trace leaks.
+
+## Continuous Integration & Testing
+
+[![CI](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml)
+[![Playwright Tests](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml)
+
+### Test layers
+
+| Layer                      | Tooling                 | Needs secrets?        | What it covers                                                                                                                                                                                                                                            |
+| -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Unit tests**             | Vitest                  | No                    | Chat route (401, input validation, NDJSON streaming, source merging, error sanitization), vector retrieval, and the upload / index / delete Server Actions (file validation, ownership checks, cleanup). Supabase, Gemini, and the PDF parser are mocked. |
+| **Database contract test** | Playwright (no browser) | Test project          | The `match_documents` SQL function: similarity threshold, result limit, ordering, and per-user filtering. Uses hand-made vectors, so it is deterministic and does not call Gemini.                                                                        |
+| **E2E tests (mocked AI)**  | Playwright              | Test project          | Login, upload, the chat UI against a mocked stream, and multi-tenant data isolation with two users on three browsers.                                                                                                                                     |
+| **Real-AI smoke test**     | Playwright (Chromium)   | Test project + Gemini | One run through embedding, retrieval, streaming answer, and source badges. Runs on `main` only.                                                                                                                                                           |
+
+### Workflows
+
+Both workflows run on every push and pull request to `main`.
+
+| Workflow                                | What it runs                                                                                  | Notes                                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **CI** (`ci.yml`)                       | `npm run typecheck`, `npm run lint`, `npm run test`                                           | No secrets needed. Fast feedback. A newer push cancels the older run.     |
+| **Playwright Tests** (`playwright.yml`) | Production build, every E2E spec except the real-AI smoke test, then the smoke test on `main` | Runs against a dedicated Supabase test project; never against production. |
+
+### Design decisions
+
+- **Fast checks first, slow checks separate.** Type, lint, and unit failures are reported in minutes without waiting for a browser run.
+- **Hermetic unit tests.** They mock every external service and the Vitest config does not load any `.env` file, so a unit test that quietly depends on the environment fails locally instead of only in CI.
+- **Route types are generated before type-checking.** `LayoutProps` and `PageProps` are generated by Next.js, so `npm run typecheck` runs `next typegen` first. Without it, a clean checkout fails to type-check.
+- **Mocked vs. real AI calls.** UI tests mock the model for speed and determinism. A single real Gemini smoke test on `main` confirms the integration still works end to end.
+- **One pass for all E2E specs.** Specs run together, so a failure in one never hides the others, including the data-isolation suite.
+- **E2E runs are serialized.** The suite shares one Supabase test project and fixed test accounts, so the workflow uses a single concurrency group and does not cancel in-progress runs.
+- **Separate test environment.** E2E tests use a service-role key and create/delete data, so they run against their own Supabase project. Its schema is built from `supabase/migrations`, which keeps it reproducible. Test accounts differ from any other environment, so a mis-pointed run fails at login instead of silently touching real data.
+- **Guard against a stale build.** `NEXT_PUBLIC_*` values are inlined at build time. The Playwright setup fails if the app's auth cookie belongs to a different Supabase project than the one in the environment, and `reuseExistingServer` is off so a leftover server is never reused.
+- **Secrets stay in GitHub Secrets.** No keys are committed, and each job has a timeout. The Playwright report is uploaded as an artifact (30-day retention) for debugging.
+
+### Running the tests locally
+
+```bash
+npm run typecheck       # generate Next.js route types, then tsc --noEmit
+npm run lint            # ESLint
+npm run test            # unit tests (no network or keys needed)
+npx playwright test     # database contract + E2E tests (needs the test environment below)
+```
+
+**E2E test environment (one-time setup)**
+
+1. Create a separate Supabase project for tests. Do not reuse your production project.
+2. Apply the schema: `npx supabase link --project-ref <test-project-ref>`, then `npx supabase db push`.
+3. In the test project's Auth settings, enable email sign-in and turn off email confirmation. Add `http://localhost:3000` to the redirect URLs.
+4. Create two test users (User A and User B) with auto-confirm, using credentials different from any other environment.
+5. Create `.env.test.local` (git-ignored) with these variables:
+
+```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   GEMINI_API_KEY=
+   TEST_USER_EMAIL=
+   TEST_USER_PASSWORD=
+   TEST_USER_B_EMAIL=
+   TEST_USER_B_PASSWORD=
+```
+
+These must be the **test** project's values. Never put production keys in this file.
+
+The first local E2E run builds the app with these variables, so it takes a little longer.
+
+<!-- Add this bullet to "Design decisions" once branch protection is enabled:
+- **Merge gate.** `main` is protected: the CI and Playwright checks must pass before merging.
+-->
 
 ## Development Roadmap (Completed Checklist)
 
@@ -152,147 +296,3 @@ graph TD
 - [x] Draw a concise **System Architecture Diagram** (Mermaid.js / Excalidraw)
 - [] Record a 30–45s product demo GIF / video walkthrough
 - [] Write a comprehensive, production-grade GitHub `README.md`
-
-## Getting Started / Local Installation
-
-### 🗄️️ Database Setup & Type Generation (Supabase)
-
-This project utilizes **Supabase** integrated with the `pgvector` extension for vector similarity searches and automatic TypeScript type generation.
-
-#### 1. Database Migrations via Supabase CLI
-
-All database schemas, `pgvector` extensions, HNSW indexes, and RPC search functions are version-controlled using Supabase migrations under [`/supabase/migrations`](./supabase/migrations).
-
-To apply these migrations to your Supabase project:
-
-```bash
-# 1. Link your local project to your Supabase project
-npx supabase link --project-ref <your-project-ref-id>
-
-# 2. Push database migrations to remote
-npx supabase db push
-```
-
-#### 2. Generate TypeScript Definitions
-
-To ensure full type safety with Supabase Client queries, generate TypeScript types directly from your database schema:
-
-```bash
-npx supabase gen types typescript --project-id <your-project-ref-id> > types/database.ts
-```
-
-## Testing
-
-This project employs **End-to-End (E2E) Testing** using [Playwright](https://playwright.dev/) to guarantee reliability across document ingestion, vector retrieval, and the conversational RAG pipeline.
-
-### E2E Integration Suite (Playwright)
-
-The E2E suite verifies the critical "Happy Path" of the application, simulating real user interactions with the Next.js frontend, Server/Client Action state processing, Gemini Embedding & LLM generation, and Supabase Vector Database persistence.
-
-#### Verified Scenarios
-
-- **File Upload & Validation:** Ensures `.pdf` and `.txt` files pass validation constraints (e.g., file size limits, MIME types).
-- **Ingestion Pipeline:** Verifies full action execution including text extraction, chunking, and vector generation.
-- **RAG Chatbot & Streaming Response:**
-  - Simulates user queries in the Chat UI (built with React 19 `useActionState` and custom hooks).
-  - Verifies real-time `ReadableStream` response streaming (typewriter effect).
-  - Validates that Supabase vector retrieval correctly supplies context and dynamically renders interactive **Source Badges** (`[Source X]`) in the UI.
-- **Async Feedback & UI State:** Ensures proper loading indicators (`isPending`) and dynamic button/textarea disabling states.
-
-### 🚀 Running Tests Locally
-
-Before running E2E tests, ensure your local development server is running and your `.env.local` contains valid Supabase and Gemini credentials.
-
-```bash
-# Option 1: Run tests with Playwright Interactive UI Mode (Recommended for debugging)
-npx playwright test --ui
-
-# Option 2: Run tests in headless mode (Command line)
-npx playwright test
-
-# Option 3: View HTML execution and trace reports
-npx playwright show-report
-```
-
-> Note: _Playwright is pre-configured with auto-waiting mechanism to seamlessly accommodate non-blocking Gemini API embedding latencies (up to 15s timeout tolerance per transaction)._
-
-## Engineering & AI-Assisted Workflow
-
-### Security & Multi-Tenant Data Isolation
-
-To protect user documents and vector embeddings in a multi-tenant environment, this project implements a defense-in-depth security model validated through AI-assisted security auditing (Cline) and automated integration tests:
-
-- **Strict Row Level Security (RLS):** Audited database migrations to revoke legacy permissive policies (`USING (true)`) and enforce strict user-scoped RLS (`auth.uid() = user_id`) across PostgreSQL tables (`documents`, `document_chunks`) and Supabase Storage buckets.
-- **Server-Side Ownership Enforcement (IDOR Prevention):** Centralized document indexing (`buildDocumentIndex`) and single/batch deletion into authenticated Server Actions that explicitly verify `doc.user_id === user.id` before mutating records or storage objects.
-- **API Boundary & Input Hardening:** Enforced explicit `supabase.auth.getUser()` checks and Zod schema validation at the `/api/chat` route handler, validated server-side file signatures/sizes on upload, and sanitized error responses to prevent internal stack trace leaks.
-
-## Continuous Integration & Testing
-
-[![CI](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/ci.yml)
-[![Playwright Tests](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml/badge.svg)](https://github.com/yy933/Ask-my-notes/actions/workflows/playwright.yml)
-
-### Test layers
-
-| Layer                      | Tooling                 | Needs secrets?        | What it covers                                                                                                                                                                                                                                            |
-| -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Unit tests**             | Vitest                  | No                    | Chat route (401, input validation, NDJSON streaming, source merging, error sanitization), vector retrieval, and the upload / index / delete Server Actions (file validation, ownership checks, cleanup). Supabase, Gemini, and the PDF parser are mocked. |
-| **Database contract test** | Playwright (no browser) | Test project          | The `match_documents` SQL function: similarity threshold, result limit, ordering, and per-user filtering. Uses hand-made vectors, so it is deterministic and does not call Gemini.                                                                        |
-| **E2E tests (mocked AI)**  | Playwright              | Test project          | Login, upload, the chat UI against a mocked stream, and multi-tenant data isolation with two users on three browsers.                                                                                                                                     |
-| **Real-AI smoke test**     | Playwright (Chromium)   | Test project + Gemini | One run through embedding, retrieval, streaming answer, and source badges. Runs on `main` only.                                                                                                                                                           |
-
-### Workflows
-
-Both workflows run on every push and pull request to `main`.
-
-| Workflow                                | What it runs                                                                                  | Notes                                                                     |
-| --------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **CI** (`ci.yml`)                       | `npm run typecheck`, `npm run lint`, `npm run test`                                           | No secrets needed. Fast feedback. A newer push cancels the older run.     |
-| **Playwright Tests** (`playwright.yml`) | Production build, every E2E spec except the real-AI smoke test, then the smoke test on `main` | Runs against a dedicated Supabase test project; never against production. |
-
-### Design decisions
-
-- **Fast checks first, slow checks separate.** Type, lint, and unit failures are reported in minutes without waiting for a browser run.
-- **Hermetic unit tests.** They mock every external service and the Vitest config does not load any `.env` file, so a unit test that quietly depends on the environment fails locally instead of only in CI.
-- **Route types are generated before type-checking.** `LayoutProps` and `PageProps` are generated by Next.js, so `npm run typecheck` runs `next typegen` first. Without it, a clean checkout fails to type-check.
-- **Mocked vs. real AI calls.** UI tests mock the model for speed and determinism. A single real Gemini smoke test on `main` confirms the integration still works end to end.
-- **One pass for all E2E specs.** Specs run together, so a failure in one never hides the others, including the data-isolation suite.
-- **E2E runs are serialized.** The suite shares one Supabase test project and fixed test accounts, so the workflow uses a single concurrency group and does not cancel in-progress runs.
-- **Separate test environment.** E2E tests use a service-role key and create/delete data, so they run against their own Supabase project. Its schema is built from `supabase/migrations`, which keeps it reproducible. Test accounts differ from any other environment, so a mis-pointed run fails at login instead of silently touching real data.
-- **Guard against a stale build.** `NEXT_PUBLIC_*` values are inlined at build time. The Playwright setup fails if the app's auth cookie belongs to a different Supabase project than the one in the environment, and `reuseExistingServer` is off so a leftover server is never reused.
-- **Secrets stay in GitHub Secrets.** No keys are committed, and each job has a timeout. The Playwright report is uploaded as an artifact (30-day retention) for debugging.
-
-### Running the tests locally
-
-```bash
-npm run typecheck       # generate Next.js route types, then tsc --noEmit
-npm run lint            # ESLint
-npm run test            # unit tests (no network or keys needed)
-npx playwright test     # database contract + E2E tests (needs the test environment below)
-```
-
-**E2E test environment (one-time setup)**
-
-1. Create a separate Supabase project for tests. Do not reuse your production project.
-2. Apply the schema: `npx supabase link --project-ref <test-project-ref>`, then `npx supabase db push`.
-3. In the test project's Auth settings, enable email sign-in and turn off email confirmation. Add `http://localhost:3000` to the redirect URLs.
-4. Create two test users (User A and User B) with auto-confirm, using credentials different from any other environment.
-5. Create `.env.test.local` (git-ignored) with these variables:
-
-```
-   NEXT_PUBLIC_SUPABASE_URL=
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=
-   SUPABASE_SERVICE_ROLE_KEY=
-   GEMINI_API_KEY=
-   TEST_USER_EMAIL=
-   TEST_USER_PASSWORD=
-   TEST_USER_B_EMAIL=
-   TEST_USER_B_PASSWORD=
-```
-
-These must be the **test** project's values. Never put production keys in this file.
-
-The first local E2E run builds the app with these variables, so it takes a little longer.
-
-<!-- Add this bullet to "Design decisions" once branch protection is enabled:
-- **Merge gate.** `main` is protected: the CI and Playwright checks must pass before merging.
--->
